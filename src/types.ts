@@ -24,3 +24,7 @@ export interface PortfolioSnapshot {
   totalValue: number;
   totalCost: number;
 }
+
+export interface Settings {
+  refreshInterval: number; // seconds, default 30
+}
