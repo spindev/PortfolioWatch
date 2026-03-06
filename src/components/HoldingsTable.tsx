@@ -4,10 +4,17 @@ import { calculateHoldingGain, calculateHoldingGainPercent, formatCurrency, form
 
 interface HoldingsTableProps {
   holdings: Holding[];
+  selectedTicker?: string | null;
+  onSelect?: (ticker: string | null) => void;
 }
 
-export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
+export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selectedTicker, onSelect }) => {
   const totalValue = holdings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0);
+
+  const handleRowClick = (ticker: string) => {
+    if (!onSelect) return;
+    onSelect(selectedTicker === ticker ? null : ticker);
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -29,17 +36,32 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
             const value = holding.shares * holding.currentPrice;
             const gain = calculateHoldingGain(holding);
             const gainPct = calculateHoldingGainPercent(holding);
-            const allocation = (value / totalValue) * 100;
+            const allocation = totalValue > 0 ? (value / totalValue) * 100 : 0;
             const isPositive = gain >= 0;
+            const isSelected = selectedTicker === holding.ticker;
 
             return (
               <tr
                 key={holding.id}
-                className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors"
+                onClick={() => handleRowClick(holding.ticker)}
+                className={`border-b border-slate-700/50 transition-colors ${
+                  onSelect ? 'cursor-pointer' : ''
+                } ${
+                  isSelected
+                    ? 'bg-blue-900/30 border-blue-700/50'
+                    : 'hover:bg-slate-700/30'
+                }`}
               >
                 <td className="py-3 px-2">
-                  <div className="font-semibold text-white">{holding.ticker}</div>
-                  <div className="text-slate-400 text-xs truncate max-w-[180px]">{holding.name}</div>
+                  <div className="flex items-center gap-2">
+                    {isSelected && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                    )}
+                    <div>
+                      <div className="font-semibold text-white">{holding.ticker}</div>
+                      <div className="text-slate-400 text-xs truncate max-w-[180px]">{holding.name}</div>
+                    </div>
+                  </div>
                 </td>
                 <td className="text-right py-3 px-2 text-slate-300">{holding.shares}</td>
                 <td className="text-right py-3 px-2 text-slate-300">
@@ -75,6 +97,11 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
           })}
         </tbody>
       </table>
+      {onSelect && (
+        <p className="text-slate-500 text-xs mt-3 text-center">
+          Click a row to view its price development
+        </p>
+      )}
     </div>
   );
 };
