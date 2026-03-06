@@ -34,10 +34,23 @@ export const DEMO_ETFS: DemoEtfDef[] = [
 ];
 
 // In development the vite proxy forwards /api/yf → https://query2.finance.yahoo.com
-// In production (GitHub Pages) the browser calls Yahoo Finance directly (CORS: *)
+// In production (GitHub Pages) requests go through a CORS proxy
 const YF_BASE = import.meta.env.DEV
   ? '/api/yf'
-  : 'https://query2.finance.yahoo.com';
+  : 'https://corsproxy.io/?https://query2.finance.yahoo.com';
+
+const FETCH_TIMEOUT_MS = 10000;
+
+async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 export interface QuoteResult {
   ticker: string;
@@ -75,7 +88,7 @@ interface YFChartResponse {
 
 export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
   const url = `${YF_BASE}/v7/finance/quote?symbols=${tickers.join(',')}`;
-  const res = await fetch(url, { headers: { Accept: 'application/json' } });
+  const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } });
   if (!res.ok) throw new Error(`Quote API error: ${res.status}`);
   const data: YFQuoteResponse = await res.json();
   const results: YFQuoteItem[] = data.quoteResponse?.result ?? [];
@@ -88,7 +101,7 @@ export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
 
 export async function fetchHistorical(ticker: string): Promise<HistoricalPoint[]> {
   const url = `${YF_BASE}/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y`;
-  const res = await fetch(url, { headers: { Accept: 'application/json' } });
+  const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } });
   if (!res.ok) throw new Error(`Historical API error: ${res.status}`);
   const data: YFChartResponse = await res.json();
   const result = data.chart?.result?.[0];
