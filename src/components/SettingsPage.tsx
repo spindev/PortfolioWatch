@@ -4,18 +4,22 @@ import { Settings } from '../types';
 interface SettingsPageProps {
   settings: Settings;
   onSave: (s: Settings) => void;
+  onClose: () => void;
 }
 
 const PRESETS = [10, 30, 60, 120, 300];
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, onClose }) => {
   const [refreshInterval, setRefreshInterval] = useState(settings.refreshInterval);
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
     onSave({ ...settings, refreshInterval });
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => {
+      setSaved(false);
+      onClose();
+    }, 1000);
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {

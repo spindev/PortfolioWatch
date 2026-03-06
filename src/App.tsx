@@ -4,7 +4,6 @@ import { StatCard } from './components/StatCard';
 import { PortfolioChart } from './components/PortfolioChart';
 import { AllocationChart } from './components/AllocationChart';
 import { HoldingsTable } from './components/HoldingsTable';
-import { SectorChart } from './components/SectorChart';
 import { SettingsPage } from './components/SettingsPage';
 import {
   DEMO_ETFS,
@@ -153,7 +152,7 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {page === 'settings' ? (
-          <SettingsPage settings={settings} onSave={handleSaveSettings} />
+          <SettingsPage settings={settings} onSave={handleSaveSettings} onClose={() => setPage('portfolio')} />
         ) : (
           <>
             {/* Error banner */}
@@ -262,18 +261,11 @@ function App() {
                   </div>
                 )}
 
-                {/* Allocation & Sector Charts */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                    <h2 className="text-white font-semibold text-lg mb-1">Allocation by ETF</h2>
-                    <p className="text-slate-400 text-xs mb-4">Portfolio weight per position</p>
-                    <AllocationChart holdings={holdings} />
-                  </div>
-                  <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                    <h2 className="text-white font-semibold text-lg mb-1">Allocation by Sector</h2>
-                    <p className="text-slate-400 text-xs mb-4">Value distribution by asset class</p>
-                    <SectorChart holdings={holdings} />
-                  </div>
+                {/* Allocation by ETF Chart */}
+                <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
+                  <h2 className="text-white font-semibold text-lg mb-1">Allocation by ETF</h2>
+                  <p className="text-slate-400 text-xs mb-4">Portfolio weight per position</p>
+                  <AllocationChart holdings={holdings} />
                 </div>
 
                 {/* Holdings Table */}
