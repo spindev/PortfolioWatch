@@ -27,6 +27,49 @@ npm run dev
 
 Then open [http://localhost:5173/PortfolioWatch/](http://localhost:5173/PortfolioWatch/).
 
+## Production Setup — Yahoo Finance CORS Proxy
+
+Browsers enforce the **Same-Origin Policy**: a page served from `spindev.github.io`
+cannot read responses from `query2.finance.yahoo.com` unless Yahoo Finance explicitly
+grants permission via `Access-Control-Allow-Origin` response headers — which it does
+not. This is a browser security restriction that cannot be bypassed.
+
+The solution is a small self-controlled proxy server that fetches from Yahoo Finance
+**server-to-server** (where CORS does not apply) and then forwards the response to the
+browser with the correct CORS header. The `cloudflare-worker/` directory contains a
+ready-to-deploy Cloudflare Worker that does exactly this.
+
+### One-time setup (takes ~5 minutes)
+
+**1. Deploy the Cloudflare Worker**
+
+```bash
+npm install -g wrangler
+cd cloudflare-worker
+wrangler login
+wrangler deploy
+```
+
+Note the worker URL printed after deployment, e.g.
+`https://portfoliowatch-yf-proxy.<account>.workers.dev`.
+
+**2. Add the URL as a GitHub Actions repository secret**
+
+Go to **Settings → Secrets and variables → Actions → New repository secret** and add:
+
+| Name | Value |
+|---|---|
+| `VITE_YF_PROXY_URL` | `https://portfoliowatch-yf-proxy.<account>.workers.dev` |
+
+Vite reads this variable at **build time** (not runtime) and bakes it into the
+JavaScript bundle. GitHub Pages hosts the resulting static files — no runtime
+environment configuration is needed on GitHub Pages itself.
+
+**3. Trigger a new deployment**
+
+Push any commit to `main` (or manually trigger the workflow). The build will pick up
+the secret and the live site will start fetching market data through your own proxy.
+
 ## Build & Deploy
 
 ```bash
