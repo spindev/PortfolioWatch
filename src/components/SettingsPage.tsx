@@ -1,15 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Settings, Theme } from '../types';
 
 interface SettingsPageProps {
   settings: Settings;
   onSave: (s: Settings) => void;
   onClose: () => void;
+  onClearPortfolio: () => void;
 }
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, onClose }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, onClose, onClearPortfolio }) => {
+  const [confirmClear, setConfirmClear] = useState(false);
+
   const handleTheme = (theme: Theme) => {
     onSave({ ...settings, theme });
+  };
+
+  const handleClearClick = () => {
+    if (confirmClear) {
+      onClearPortfolio();
+      setConfirmClear(false);
+    } else {
+      setConfirmClear(true);
+    }
   };
 
   return (
@@ -70,6 +82,42 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
               Dunkel
             </button>
           </div>
+        </div>
+
+        {/* Portfolio data management */}
+        <div className="space-y-2">
+          <p className="text-gray-700 dark:text-slate-300 text-sm font-medium">Datenverwaltung</p>
+          {confirmClear ? (
+            <div className="rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-3 space-y-2">
+              <p className="text-red-700 dark:text-red-300 text-xs">
+                Alle importierten Käufe und Verkäufe werden unwiderruflich gelöscht. Fortfahren?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmClear(false)}
+                  className="flex-1 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={handleClearClick}
+                  className="flex-1 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                >
+                  Ja, löschen
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleClearClick}
+              className="w-full py-2 rounded-lg text-sm font-medium transition-colors border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Portfolio löschen
+            </button>
+          )}
         </div>
 
       </div>
