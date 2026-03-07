@@ -33,22 +33,15 @@ export const DEMO_ETFS: DemoEtfDef[] = [
   },
 ];
 
-const YF_DIRECT_BASE = 'https://query2.finance.yahoo.com';
-
 // In development the vite proxy forwards /api/yf → https://query2.finance.yahoo.com
 const YF_DEV_PROXY = '/api/yf';
 
-// Production CORS proxies tried in parallel.  The target URL is always
-// percent-encoded so that query-string delimiters (? &) in the Yahoo Finance
-// URL are not misinterpreted as proxy query parameters.
-// Multiple proxies are listed so that if one service is down or rate-limited
-// the first successful response from any of the others will be used.
-const CORS_PROXIES: Array<(url: string) => string> = [
-  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url) => `https://api.cors.lol/?url=${encodeURIComponent(url)}`,
-  (url) => `https://proxy.corsfix.com/?${encodeURIComponent(url)}`,
-];
+// Self-controlled Yahoo Finance CORS proxy (Cloudflare Worker).
+// Set VITE_YF_PROXY_URL in your environment to the deployed worker URL, e.g.:
+//   VITE_YF_PROXY_URL=https://portfoliowatch-yf-proxy.<account>.workers.dev
+// See cloudflare-worker/ for the worker source and deployment instructions.
+// When this is configured, third-party CORS proxy services are not used.
+const YF_PROXY_URL = (import.meta.env.VITE_YF_PROXY_URL as string | undefined)?.replace(/\/$/, '');
 
 const FETCH_TIMEOUT_MS = 15000;
 
@@ -64,48 +57,31 @@ async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Res
 }
 
 /**
- * Resolves with the first Response that fulfils, or rejects with a combined
- * error message once every attempt has failed.  This lets us race multiple
- * CORS proxy calls in parallel and return as soon as the fastest one responds.
- */
-function firstSuccess(promises: Promise<Response>[]): Promise<Response> {
-  if (promises.length === 0) return Promise.reject(new Error('No CORS proxies configured'));
-  return new Promise<Response>((resolve, reject) => {
-    let pending = promises.length;
-    const errors: string[] = [];
-    promises.forEach((p, i) => {
-      p.then(resolve).catch((err: unknown) => {
-        errors[i] = err instanceof Error ? err.message : String(err);
-        if (--pending === 0) reject(new Error(`All CORS proxies failed: ${errors.join('; ')}`));
-      });
-    });
-  });
-}
-
-/**
  * Fetch a Yahoo Finance path, routing through the Vite dev-proxy in
- * development or racing all public CORS proxies in parallel in production.
- * Using a direct fetch to query2.finance.yahoo.com is skipped in production
- * because browsers always block it with a CORS error.  All proxies are
- * started simultaneously; the first successful response wins.
+ * development or through the configured self-controlled CORS proxy in
+ * production.
+ *
+ * Set VITE_YF_PROXY_URL to the URL of the deployed Cloudflare Worker
+ * (see cloudflare-worker/) so that CORS headers are added server-side
+ * and no third-party proxy services are required.
  */
 async function fetchYF(path: string, options?: RequestInit): Promise<Response> {
   if (import.meta.env.DEV) {
     return fetchWithTimeout(`${YF_DEV_PROXY}${path}`, options);
   }
 
-  const directUrl = `${YF_DIRECT_BASE}${path}`;
+  if (!YF_PROXY_URL) {
+    throw new Error(
+      'No Yahoo Finance proxy configured. ' +
+        'Deploy the Cloudflare Worker in cloudflare-worker/ and set ' +
+        'VITE_YF_PROXY_URL to its URL.',
+    );
+  }
 
-  // Race all CORS proxies in parallel – use whichever responds first.
-  return firstSuccess(
-    CORS_PROXIES.map((buildProxy) => {
-      const proxyUrl = buildProxy(directUrl);
-      return fetchWithTimeout(proxyUrl, options).then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res;
-      });
-    }),
-  );
+  const url = `${YF_PROXY_URL}${path}`;
+  const res = await fetchWithTimeout(url, options);
+  if (!res.ok) throw new Error(`Proxy responded with HTTP ${res.status}`);
+  return res;
 }
 
 export interface QuoteResult {
