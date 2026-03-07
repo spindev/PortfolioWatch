@@ -13,6 +13,11 @@ export interface PurchaseLot {
   buyPrice: number;
 }
 
+export interface SaleLot {
+  date: string;
+  shares: number;
+}
+
 export interface HistoricalClose {
   date: string;
   close: number;

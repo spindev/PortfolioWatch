@@ -1,4 +1,4 @@
-import { Holding, PortfolioSnapshot, PurchaseLot } from '../types';
+import { Holding, PortfolioSnapshot, PurchaseLot, SaleLot } from '../types';
 import etfsConfig from '../etfs.json';
 
 // ETF definitions — the single source of truth shared with scripts/fetch-finance-data.mjs.
@@ -88,6 +88,35 @@ function parseHistorical(data: YFChartResponse): HistoricalPoint[] {
 }
 
 /**
+ * Apply FIFO (first-in, first-out) to reduce buy lots by the given sale lots.
+ * Returns a new array of remaining lots with adjusted share counts.
+ * Buy lots must be sorted oldest-first (the caller guarantees this).
+ */
+export function applyFifoSales(
+  buyLots: PurchaseLot[],
+  saleLots: SaleLot[],
+): PurchaseLot[] {
+  if (saleLots.length === 0) return buyLots;
+
+  // Clone lots so we don't mutate the originals
+  const queue = buyLots.map((l) => ({ ...l }));
+  const totalSold = saleLots.reduce((s, l) => s + l.shares, 0);
+
+  let remaining = totalSold;
+  for (let i = 0; i < queue.length && remaining > 0; i++) {
+    if (queue[i].shares <= remaining) {
+      remaining -= queue[i].shares;
+      queue[i].shares = 0;
+    } else {
+      queue[i].shares -= remaining;
+      remaining = 0;
+    }
+  }
+
+  return queue.filter((l) => l.shares > 0);
+}
+
+/**
  * Fetch current quotes for the given tickers.
  *
  * - Development: live from Yahoo Finance via the Vite dev proxy.
@@ -168,12 +197,24 @@ export function buildEtfHistory(
   }));
 }
 
+/** Per-ticker transaction history used for time-aware portfolio history */
+export interface TickerTransactions {
+  /** All buy lots for this ticker, sorted oldest-first */
+  buyLots: PurchaseLot[];
+  /** All sell lots for this ticker, sorted oldest-first */
+  saleLots: SaleLot[];
+}
+
 /** Combine per-ETF histories into a single portfolio history using common dates.
  *
  * @param sharesByTicker   Actual share count per ticker (computed from holdings/lots).
  *                         Falls back to def.shares when not provided.
  * @param costBasisByTicker Actual average buy price per ticker (from holdings).
  *                         Falls back to avgBuyPrices (first historical close) when not provided.
+ * @param transactionsByTicker Full buy/sell history per ticker for time-aware cost basis.
+ *                         When provided for a ticker, the chart will correctly reflect the
+ *                         position size and cost basis at each point in time (FIFO applied
+ *                         per date), rather than projecting today's state back in time.
  */
 export function buildPortfolioHistory(
   etfHistories: Record<string, HistoricalPoint[]>,
@@ -181,11 +222,16 @@ export function buildPortfolioHistory(
   avgBuyPrices: Record<string, number>,
   sharesByTicker: Record<string, number> = {},
   costBasisByTicker: Record<string, number> = {},
+  transactionsByTicker: Record<string, TickerTransactions> = {},
 ): PortfolioSnapshot[] {
-  // Only include ETFs that have a non-zero share count
-  const activeDefs = etfDefs.filter(
-    (def) => (sharesByTicker[def.ticker] ?? def.shares) > 0,
-  );
+  // Include ETFs that either have a non-zero current share count OR have buy transactions
+  // in their history (so fully-sold ETFs are still shown for the period they were held).
+  const activeDefs = etfDefs.filter((def) => {
+    if (transactionsByTicker[def.ticker]) {
+      return transactionsByTicker[def.ticker].buyLots.length > 0;
+    }
+    return (sharesByTicker[def.ticker] ?? def.shares) > 0;
+  });
   if (activeDefs.length === 0) return [];
 
   // Build price-lookup maps
@@ -213,8 +259,23 @@ export function buildPortfolioHistory(
     let totalValue = 0;
     let totalCost = 0;
     activeDefs.forEach((def) => {
-      const shares = sharesByTicker[def.ticker] ?? def.shares;
-      const costBasis = costBasisByTicker[def.ticker] ?? avgBuyPrices[def.ticker] ?? 0;
+      let shares: number;
+      let costBasis: number;
+
+      const txns = transactionsByTicker[def.ticker];
+      if (txns) {
+        // Time-aware: compute the position as it stood on this date using FIFO
+        const buysAtDate = txns.buyLots.filter((l) => l.date <= date);
+        const salesAtDate = txns.saleLots.filter((l) => l.date <= date);
+        const netLots = applyFifoSales(buysAtDate, salesAtDate);
+        shares = netLots.reduce((s, l) => s + l.shares, 0);
+        const totalLotCost = netLots.reduce((s, l) => s + l.shares * l.buyPrice, 0);
+        costBasis = shares > 0 ? totalLotCost / shares : 0;
+      } else {
+        shares = sharesByTicker[def.ticker] ?? def.shares;
+        costBasis = costBasisByTicker[def.ticker] ?? avgBuyPrices[def.ticker] ?? 0;
+      }
+
       // Fall back to cost basis (or historical avg) when the price map has no entry for this date
       const priceFallback = costBasis > 0 ? costBasis : (avgBuyPrices[def.ticker] ?? 0);
       const price = priceMaps[def.ticker]?.[date] ?? priceFallback;
@@ -236,6 +297,7 @@ export function buildHoldings(
   avgBuyPrices: Record<string, number>,
   rawHistories: Record<string, HistoricalPoint[]> = {},
   importedLotsByIsin: Record<string, PurchaseLot[]> = {},
+  importedSalesByIsin: Record<string, SaleLot[]> = {},
 ): Holding[] {
   const quoteMap: Record<string, QuoteResult> = {};
   quotes.forEach((q) => { quoteMap[q.ticker] = q; });
@@ -247,8 +309,12 @@ export function buildHoldings(
     // Merge static lots from definition with any CSV-imported lots (by ISIN)
     const staticLots: PurchaseLot[] = (def.lots ?? []).slice();
     const csvLots: PurchaseLot[] = def.isin ? (importedLotsByIsin[def.isin] ?? []) : [];
-    const lots: PurchaseLot[] = [...staticLots, ...csvLots]
+    const allBuyLots: PurchaseLot[] = [...staticLots, ...csvLots]
       .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Apply FIFO: remove sold shares from the oldest buy lots first
+    const saleLots: SaleLot[] = def.isin ? (importedSalesByIsin[def.isin] ?? []) : [];
+    const lots: PurchaseLot[] = applyFifoSales(allBuyLots, saleLots);
 
     let avgBuyPrice: number;
     if (lots.length > 0) {
@@ -259,8 +325,8 @@ export function buildHoldings(
       avgBuyPrice = avgBuyPrices[def.ticker] ?? quotePrice;
     }
 
-    // Derive total shares: prefer sum of lots when available, fall back to def.shares
-    const shares = lots.length > 0
+    // Derive total shares: prefer sum of remaining lots when available, fall back to def.shares
+    const shares = allBuyLots.length > 0
       ? lots.reduce((s, l) => s + l.shares, 0)
       : def.shares;
 
