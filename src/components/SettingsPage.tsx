@@ -28,9 +28,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
       className="fixed inset-0 z-40 bg-black/50"
       onClick={onClose}
     >
-      {/* Panel – positioned in the top-right corner, below the header */}
+      {/* Panel – full width on mobile, fixed 320px anchored top-right on sm+ */}
       <div
-        className="absolute top-16 right-4 bg-slate-800 rounded-xl p-6 border border-slate-700 w-80 shadow-2xl space-y-6"
+        className="absolute top-16 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-2xl space-y-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">

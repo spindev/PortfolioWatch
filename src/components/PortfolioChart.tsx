@@ -58,7 +58,8 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange,
   const tickInterval = Math.max(1, Math.floor(filtered.length / 6));
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
+    <div className="h-[220px] sm:h-[320px]">
+    <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={filtered} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
         <defs>
           <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
@@ -109,5 +110,6 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange,
         />
       </AreaChart>
     </ResponsiveContainer>
+    </div>
   );
 };

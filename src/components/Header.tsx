@@ -15,8 +15,8 @@ export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, i
   const locale = getLocale(lang);
 
   return (
-    <header className="bg-slate-900 border-b border-slate-700 px-6 py-4 sticky top-0 z-10">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <header className="bg-slate-900 border-b border-slate-700 px-4 sm:px-6 py-4 sticky top-0 z-10">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
         <button
           onClick={() => onNavigate('portfolio')}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity focus:outline-none"
@@ -33,14 +33,17 @@ export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, i
           </div>
         </button>
 
-        <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-slate-400 min-w-0">
           {isLoading && !hasError && (
-            <span className="inline-block w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+            <span className="inline-block w-2 h-2 bg-blue-400 rounded-full animate-pulse flex-shrink-0" />
           )}
           {hasError ? (
             <span className="text-red-400">{t('priceFetchError', lang)}</span>
           ) : lastUpdated ? (
-            <span>{t('updated', lang)} {lastUpdated.toLocaleTimeString(locale)}</span>
+            <>
+              <span className="hidden sm:inline">{t('updated', lang)}</span>
+              <span className="truncate">{lastUpdated.toLocaleTimeString(locale)}</span>
+            </>
           ) : (
             <span>{t('loading', lang)}</span>
           )}
