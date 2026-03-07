@@ -20,6 +20,10 @@ export const DEMO_ETFS: DemoEtfDef[] = etfsConfig as DemoEtfDef[];
 // ─── Development: Vite proxy forwards /api/yf → query2.finance.yahoo.com ─────
 const YF_DEV_PROXY = '/api/yf';
 
+// ─── Development: Vite middleware serves Gettex quote data at this endpoint ──
+//     (see vite.config.ts – gettexDevPlugin)
+const GETTEX_DEV_QUOTES = '/api/gettex/quotes';
+
 // ─── Production: static JSON files baked into the build by ───────────────────
 //     scripts/fetch-finance-data.mjs (served from the same origin — no CORS).
 //     BASE_URL is '/PortfolioWatch/' in production (see vite.config.ts).
@@ -124,15 +128,54 @@ export function applyFifoSales(
 /**
  * Fetch current quotes for the given tickers.
  *
- * - Development: live from Yahoo Finance via the Vite dev proxy.
+ * - Development: tries Gettex first (via the Vite gettexDevPlugin middleware
+ *   which downloads and parses the posttrade CSV server-side). Falls back to
+ *   Yahoo Finance for any ticker whose ISIN is not found on Gettex.
  * - Production: reads from `data/quotes.json` — a static file baked into the
  *   build by scripts/fetch-finance-data.mjs and served from the same origin.
  *   No CORS proxy or external account is required.
  */
 export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
   if (import.meta.env.DEV) {
-    return Promise.all(
-      tickers.map(async (ticker): Promise<QuoteResult> => {
+    // Build ISIN ↔ ticker maps from the ETF definitions
+    const tickerToIsin: Record<string, string> = {};
+    const isinToTicker: Record<string, string> = {};
+    DEMO_ETFS.forEach((def) => {
+      if (def.isin) {
+        tickerToIsin[def.ticker] = def.isin;
+        isinToTicker[def.isin] = def.ticker;
+      }
+    });
+
+    const isins = tickers.map((t) => tickerToIsin[t]).filter(Boolean);
+    const gettexResults: QuoteResult[] = [];
+
+    // ── Try Gettex (Börse München) for current quotes ──────────────────────
+    if (isins.length > 0) {
+      try {
+        const res = await fetchWithTimeout(
+          `${GETTEX_DEV_QUOTES}?isins=${isins.join(',')}`,
+          { headers: { Accept: 'application/json' } },
+        );
+        if (res.ok) {
+          const data: Array<{ isin: string; price: number; currency: string }> =
+            await res.json();
+          for (const item of data) {
+            const ticker = isinToTicker[item.isin];
+            if (ticker) gettexResults.push({ ticker, price: item.price, currency: item.currency });
+          }
+        }
+      } catch {
+        // Gettex unavailable — fall through to Yahoo Finance
+      }
+    }
+
+    // ── Fall back to Yahoo Finance for any ticker not returned by Gettex ───
+    const foundTickers = new Set(gettexResults.map((r) => r.ticker));
+    const missingTickers = tickers.filter((t) => !foundTickers.has(t));
+
+    const yfResults = await Promise.all(
+      missingTickers.map(async (ticker): Promise<QuoteResult> => {
         const path = `/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
         const res = await fetchWithTimeout(`${YF_DEV_PROXY}${path}`, {
           headers: { Accept: 'application/json' },
@@ -141,6 +184,8 @@ export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
         return parseQuote(ticker, await res.json());
       }),
     );
+
+    return [...gettexResults, ...yfResults];
   }
 
   // Production: read from pre-fetched static JSON (same-origin, no CORS needed)
