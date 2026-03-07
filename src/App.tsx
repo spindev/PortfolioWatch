@@ -5,6 +5,7 @@ import { PortfolioChart } from './components/PortfolioChart';
 import { HoldingsTable } from './components/HoldingsTable';
 import { SettingsPage } from './components/SettingsPage';
 import { CsvImportModal } from './components/CsvImportModal';
+import { ManualBuyModal } from './components/ManualBuyModal';
 import {
   DEMO_ETFS,
   fetchQuotes,
@@ -51,6 +52,7 @@ function App() {
   const importedLotsRef = useRef<Record<string, PurchaseLot[]>>(getImportedLots());
   const importedSalesRef = useRef<Record<string, SaleLot[]>>(getImportedSales());
   const [csvImportLots, setCsvImportLots] = useState<import('./utils/csvParser').CsvLot[] | null>(null);
+  const [showManualBuy, setShowManualBuy] = useState(false);
 
   const isDark = settings.theme === 'dark';
 
@@ -130,6 +132,26 @@ function App() {
     setSettings(s);
   };
 
+  const handleClearPortfolio = () => {
+    importedLotsRef.current = {};
+    importedSalesRef.current = {};
+    saveImportedLots({});
+    saveImportedSales({});
+    setPage('portfolio');
+    loadInitialData();
+  };
+
+  /** Called when the user manually enters a single purchase lot */
+  const handleManualBuyConfirm = (isin: string, lot: PurchaseLot) => {
+    const existing = importedLotsRef.current[isin] ?? [];
+    const updated = [...existing, lot].sort((a, b) => a.date.localeCompare(b.date));
+    const newLots = { ...importedLotsRef.current, [isin]: updated };
+    importedLotsRef.current = newLots;
+    saveImportedLots(newLots);
+    setShowManualBuy(false);
+    loadInitialData();
+  };
+
   /** Read a file as text with the given encoding */
   const readFileAsText = (file: File, encoding: string): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -201,6 +223,7 @@ function App() {
         isLoading={isLoading}
         hasError={!!error && !lastUpdated}
         onCsvUpload={handleCsvUpload}
+        onManualBuy={() => setShowManualBuy(true)}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
@@ -317,7 +340,12 @@ function App() {
 
       {/* Settings overlay – rendered on top of portfolio content */}
       {page === 'settings' && (
-        <SettingsPage settings={settings} onSave={handleSaveSettings} onClose={() => setPage('portfolio')} />
+        <SettingsPage
+          settings={settings}
+          onSave={handleSaveSettings}
+          onClose={() => setPage('portfolio')}
+          onClearPortfolio={handleClearPortfolio}
+        />
       )}
 
       {/* CSV import modal – shown after a CSV file is selected */}
@@ -327,6 +355,15 @@ function App() {
           knownEtfs={DEMO_ETFS}
           onConfirm={handleImportConfirm}
           onClose={() => setCsvImportLots(null)}
+        />
+      )}
+
+      {/* Manual buy modal */}
+      {showManualBuy && (
+        <ManualBuyModal
+          knownEtfs={DEMO_ETFS}
+          onConfirm={handleManualBuyConfirm}
+          onClose={() => setShowManualBuy(false)}
         />
       )}
     </div>
