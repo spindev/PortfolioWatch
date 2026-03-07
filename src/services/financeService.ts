@@ -104,16 +104,21 @@ export function applyFifoSales(
 
   let remaining = totalSold;
   for (let i = 0; i < queue.length && remaining > 0; i++) {
-    if (queue[i].shares <= remaining) {
-      remaining -= queue[i].shares;
+    // Use epsilon tolerance to treat lots as fully consumed when floating-point
+    // arithmetic leaves a negligible residual (e.g. 21.0 - 21.0 = 2.2e-16).
+    if (queue[i].shares <= remaining + 1e-9) {
+      remaining = Math.max(0, remaining - queue[i].shares);
       queue[i].shares = 0;
     } else {
-      queue[i].shares -= remaining;
+      // Round to 8 decimal places to prevent floating-point drift accumulating
+      // across repeated partial deductions.
+      queue[i].shares = Math.round((queue[i].shares - remaining) * 1e8) / 1e8;
       remaining = 0;
     }
   }
 
-  return queue.filter((l) => l.shares > 0);
+  // Filter out near-zero lots that are artefacts of floating-point rounding.
+  return queue.filter((l) => l.shares > 1e-9);
 }
 
 /**

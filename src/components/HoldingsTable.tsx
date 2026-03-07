@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Holding } from '../types';
-import { calculateHoldingGain, calculateHoldingGainPercent, formatCurrency, formatPercent } from '../utils/calculations';
+import { calculateHoldingGain, calculateHoldingGainPercent, formatCurrency, formatPercent, formatShares } from '../utils/calculations';
 import { HoldingDetail } from './HoldingDetail';
 
 const CURRENCY = 'EUR';
@@ -74,7 +74,7 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
                 <div className="grid grid-cols-4 gap-1 text-xs">
                   <div>
                     <p className="text-gray-400 dark:text-slate-500 mb-0.5">Anteile</p>
-                    <p className="text-gray-700 dark:text-slate-300 font-medium">{holding.shares}</p>
+                    <p className="text-gray-700 dark:text-slate-300 font-medium">{formatShares(holding.shares)}</p>
                   </div>
                   <div>
                     <p className="text-gray-400 dark:text-slate-500 mb-0.5">Aktuell</p>
@@ -149,7 +149,7 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
                         </svg>
                       </div>
                     </td>
-                    <td className="text-right py-3 px-2 text-gray-700 dark:text-slate-300">{holding.shares}</td>
+                    <td className="text-right py-3 px-2 text-gray-700 dark:text-slate-300">{formatShares(holding.shares)}</td>
                     <td className="text-right py-3 px-2 text-gray-700 dark:text-slate-300">
                       {formatCurrency(holding.avgBuyPrice, CURRENCY, LOCALE)}
                     </td>

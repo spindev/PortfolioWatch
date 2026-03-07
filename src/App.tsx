@@ -163,28 +163,21 @@ function App() {
 
   /** Called when the user confirms their ISIN selection in the modal */
   const handleImportConfirm = (selectedByIsin: Record<string, PurchaseLot[]>, salesByIsin: Record<string, SaleLot[]>) => {
-    // Merge buy lots
+    // Replace buy lots per ISIN with the data from the new CSV.
+    // Using replace (not merge) ensures that a corrected re-import fully
+    // overwrites the old data and that genuine duplicate orders on the same
+    // day at the same price are never silently dropped.
     const mergedLots: Record<string, PurchaseLot[]> = { ...importedLotsRef.current };
     Object.entries(selectedByIsin).forEach(([isin, newLots]) => {
-      const existing = mergedLots[isin] ?? [];
-      // Deduplicate: skip lots that already exist (same date, shares, buyPrice)
-      const isoDuplicate = (a: PurchaseLot, b: PurchaseLot) =>
-        a.date === b.date && a.shares === b.shares && a.buyPrice === b.buyPrice;
-      const unique = newLots.filter((nl) => !existing.some((el) => isoDuplicate(el, nl)));
-      mergedLots[isin] = [...existing, ...unique];
+      mergedLots[isin] = newLots;
     });
     importedLotsRef.current = mergedLots;
     saveImportedLots(mergedLots);
 
-    // Merge sell lots
+    // Replace sell lots per ISIN with the data from the new CSV.
     const mergedSales: Record<string, SaleLot[]> = { ...importedSalesRef.current };
     Object.entries(salesByIsin).forEach(([isin, newSales]) => {
-      const existing = mergedSales[isin] ?? [];
-      // Deduplicate: skip sales that already exist (same date, shares)
-      const isoDuplicate = (a: SaleLot, b: SaleLot) =>
-        a.date === b.date && a.shares === b.shares;
-      const unique = newSales.filter((ns) => !existing.some((es) => isoDuplicate(es, ns)));
-      mergedSales[isin] = [...existing, ...unique];
+      mergedSales[isin] = newSales;
     });
     importedSalesRef.current = mergedSales;
     saveImportedSales(mergedSales);
