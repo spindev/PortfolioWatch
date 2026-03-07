@@ -47,7 +47,7 @@ const ChartTooltip = ({
 };
 
 // ── ETF price area chart ─────────────────────────────────────────────────────
-const EtfChart: React.FC<{ holding: Holding }> = ({ holding }) => {
+const EtfChart: React.FC<{ holding: Holding; compact?: boolean }> = ({ holding, compact = false }) => {
   const data = holding.history;
   const tickInterval = Math.max(1, Math.floor(data.length / 6));
 
@@ -60,9 +60,9 @@ const EtfChart: React.FC<{ holding: Holding }> = ({ holding }) => {
   }
 
   return (
-    <div className="h-[200px] sm:h-[240px]">
+    <div className={compact ? 'h-[180px]' : 'h-[200px] sm:h-[240px]'}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 10, right: 8, left: compact ? 0 : 10, bottom: 0 }}>
           <defs>
             <linearGradient id={`etfGradient-${holding.id}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -72,7 +72,7 @@ const EtfChart: React.FC<{ holding: Holding }> = ({ holding }) => {
           <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
           <XAxis
             dataKey="date"
-            tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
+            tick={{ fill: 'var(--chart-tick)', fontSize: compact ? 10 : 11 }}
             tickLine={false}
             axisLine={false}
             interval={tickInterval}
@@ -82,12 +82,12 @@ const EtfChart: React.FC<{ holding: Holding }> = ({ holding }) => {
             }}
           />
           <YAxis
-            tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
+            tick={{ fill: 'var(--chart-tick)', fontSize: compact ? 10 : 11 }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(val) => formatCurrency(val, CURRENCY, LOCALE)}
             domain={['auto', 'auto']}
-            width={70}
+            width={compact ? 58 : 70}
           />
           <Tooltip content={<ChartTooltip />} />
           <Area
@@ -219,42 +219,160 @@ const LotsTable: React.FC<{ holding: Holding }> = ({ holding }) => {
   );
 };
 
-// ── Main HoldingDetail component ─────────────────────────────────────────────
+// ── Mobile card list for purchase lots ──────────────────────────────────────
+const LotsCards: React.FC<{ holding: Holding }> = ({ holding }) => {
+  const { lots, currentPrice } = holding;
+
+  if (lots.length === 0) {
+    return (
+      <div className="py-4 text-center text-gray-400 dark:text-slate-500 text-sm">
+        Keine Kaufdaten verfügbar
+      </div>
+    );
+  }
+
+  const totalShares = lots.reduce((s, l) => s + l.shares, 0);
+  const totalCost = lots.reduce((s, l) => s + l.shares * l.buyPrice, 0);
+  const totalCurrentValue = lots.reduce((s, l) => s + l.shares * currentPrice, 0);
+  const totalGain = totalCurrentValue - totalCost;
+  const weightedAvgBuy = totalShares > 0 ? totalCost / totalShares : 0;
+  const totalGainPct = calculatePriceGainPercent(currentPrice, weightedAvgBuy);
+  const isTotalPos = totalGain >= 0;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-gray-400 dark:text-slate-500 mb-2">
+        FIFO-Reihenfolge — älteste Positionen werden zuerst verkauft
+      </p>
+      {lots.map((lot: PurchaseLot, idx: number) => {
+        const costBasis = lot.shares * lot.buyPrice;
+        const currentValue = lot.shares * currentPrice;
+        const gain = currentValue - costBasis;
+        const gainPct = calculatePriceGainPercent(currentPrice, lot.buyPrice);
+        const isPositive = gain >= 0;
+
+        return (
+          <div
+            key={idx}
+            className="rounded-md bg-gray-100 dark:bg-slate-800/60 p-3"
+          >
+            {/* Header: date + P/L */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-500 dark:text-slate-400">
+                {new Date(lot.date).toLocaleDateString(LOCALE)}
+              </span>
+              <span className={`text-sm font-semibold ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                {isPositive ? '+' : ''}{formatCurrency(gain, CURRENCY, LOCALE)}&nbsp;({formatPercent(gainPct)})
+              </span>
+            </div>
+            {/* Details grid */}
+            <div className="grid grid-cols-4 gap-1 text-xs">
+              <div>
+                <p className="text-gray-400 dark:text-slate-500 mb-0.5">Anteile</p>
+                <p className="text-gray-700 dark:text-slate-300 font-medium">{lot.shares}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 dark:text-slate-500 mb-0.5">Kaufkurs</p>
+                <p className="text-gray-700 dark:text-slate-300 font-medium">{formatCurrency(lot.buyPrice, CURRENCY, LOCALE)}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 dark:text-slate-500 mb-0.5">Kaufwert</p>
+                <p className="text-gray-700 dark:text-slate-300 font-medium">{formatCurrency(costBasis, CURRENCY, LOCALE)}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 dark:text-slate-500 mb-0.5">Akt. Wert</p>
+                <p className="text-gray-900 dark:text-white font-medium">{formatCurrency(currentValue, CURRENCY, LOCALE)}</p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Summary row */}
+      <div className="rounded-md border-t-2 border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800/60 p-3 font-semibold">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-gray-600 dark:text-slate-300">Gesamt</span>
+          <span className={`text-sm font-bold ${isTotalPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+            {isTotalPos ? '+' : ''}{formatCurrency(totalGain, CURRENCY, LOCALE)}&nbsp;({formatPercent(totalGainPct)})
+          </span>
+        </div>
+        <div className="grid grid-cols-4 gap-1 text-xs">
+          <div>
+            <p className="text-gray-400 dark:text-slate-500 mb-0.5">Anteile</p>
+            <p className="text-gray-700 dark:text-slate-300">{totalShares}</p>
+          </div>
+          <div>
+            <p className="text-gray-400 dark:text-slate-500 mb-0.5">Ø Kurs</p>
+            <p className="text-gray-700 dark:text-slate-300">{formatCurrency(weightedAvgBuy, CURRENCY, LOCALE)}</p>
+          </div>
+          <div>
+            <p className="text-gray-400 dark:text-slate-500 mb-0.5">Kaufwert</p>
+            <p className="text-gray-700 dark:text-slate-300">{formatCurrency(totalCost, CURRENCY, LOCALE)}</p>
+          </div>
+          <div>
+            <p className="text-gray-400 dark:text-slate-500 mb-0.5">Akt. Wert</p>
+            <p className="text-gray-900 dark:text-white">{formatCurrency(totalCurrentValue, CURRENCY, LOCALE)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 export const HoldingDetail: React.FC<HoldingDetailProps> = ({ holding }) => {
   const [activeTab, setActiveTab] = useState<DetailTab>('chart');
 
   return (
     <div className="mt-3 pt-4 border-t border-gray-200 dark:border-slate-600">
-      {/* Tab switcher */}
-      <div className="flex gap-1 mb-4">
-        <button
-          onClick={() => setActiveTab('chart')}
-          className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
-            activeTab === 'chart'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
-          }`}
-        >
-          Entwicklung
-        </button>
-        <button
-          onClick={() => setActiveTab('lots')}
-          className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
-            activeTab === 'lots'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
-          }`}
-        >
-          Käufe
-        </button>
+
+      {/* ── Mobile layout: chart + lots stacked (all info visible at once) ── */}
+      <div className="sm:hidden space-y-5">
+        <div>
+          <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+            Kursentwicklung
+          </p>
+          <EtfChart holding={holding} compact />
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+            Käufe
+          </p>
+          <LotsCards holding={holding} />
+        </div>
       </div>
 
-      {/* Tab content */}
-      {activeTab === 'chart' ? (
-        <EtfChart holding={holding} />
-      ) : (
-        <LotsTable holding={holding} />
-      )}
+      {/* ── Desktop layout: tab switcher ── */}
+      <div className="hidden sm:block">
+        <div className="flex gap-1 mb-4">
+          <button
+            onClick={() => setActiveTab('chart')}
+            className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
+              activeTab === 'chart'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            Entwicklung
+          </button>
+          <button
+            onClick={() => setActiveTab('lots')}
+            className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
+              activeTab === 'lots'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            Käufe
+          </button>
+        </div>
+
+        {activeTab === 'chart' ? (
+          <EtfChart holding={holding} />
+        ) : (
+          <LotsTable holding={holding} />
+        )}
+      </div>
     </div>
   );
 };
