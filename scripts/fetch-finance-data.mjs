@@ -84,6 +84,8 @@ async function parseGettexCsv(csvUrl, targetIsins) {
   const text = gunzipSync(buffer).toString('utf8');
   const isinSet = new Set(targetIsins);
   const prices = {};
+  // Row format (no header, no quoted fields): ISIN,TIME,CURRENCY,PRICE,AMOUNT
+  // All fields are fixed-format tokens so a plain split(',') is safe here.
   for (const line of text.split('\n')) {
     if (!line.trim()) continue;
     const parts = line.split(',');

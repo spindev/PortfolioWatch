@@ -24,6 +24,17 @@ const YF_DEV_PROXY = '/api/yf';
 //     (see vite.config.ts – gettexDevPlugin)
 const GETTEX_DEV_QUOTES = '/api/gettex/quotes';
 
+// ─── ISIN ↔ ticker maps built once from the static ETF definitions ────────────
+// Computed at module load time so fetchQuotes() doesn't repeat the work on every call.
+const _tickerToIsin: Record<string, string> = {};
+const _isinToTicker: Record<string, string> = {};
+DEMO_ETFS.forEach((def) => {
+  if (def.isin) {
+    _tickerToIsin[def.ticker] = def.isin;
+    _isinToTicker[def.isin] = def.ticker;
+  }
+});
+
 // ─── Production: static JSON files baked into the build by ───────────────────
 //     scripts/fetch-finance-data.mjs (served from the same origin — no CORS).
 //     BASE_URL is '/PortfolioWatch/' in production (see vite.config.ts).
@@ -137,17 +148,7 @@ export function applyFifoSales(
  */
 export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
   if (import.meta.env.DEV) {
-    // Build ISIN ↔ ticker maps from the ETF definitions
-    const tickerToIsin: Record<string, string> = {};
-    const isinToTicker: Record<string, string> = {};
-    DEMO_ETFS.forEach((def) => {
-      if (def.isin) {
-        tickerToIsin[def.ticker] = def.isin;
-        isinToTicker[def.isin] = def.ticker;
-      }
-    });
-
-    const isins = tickers.map((t) => tickerToIsin[t]).filter(Boolean);
+    const isins = tickers.map((t) => _tickerToIsin[t]).filter(Boolean);
     const gettexResults: QuoteResult[] = [];
 
     // ── Try Gettex (Börse München) for current quotes ──────────────────────
@@ -161,7 +162,7 @@ export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
           const data: Array<{ isin: string; price: number; currency: string }> =
             await res.json();
           for (const item of data) {
-            const ticker = isinToTicker[item.isin];
+            const ticker = _isinToTicker[item.isin];
             if (ticker) gettexResults.push({ ticker, price: item.price, currency: item.currency });
           }
         }
