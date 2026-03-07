@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { DemoEtfDef } from '../services/financeService';
 import { CsvLot, groupCsvLotsByIsin } from '../utils/csvParser';
 
@@ -23,33 +23,13 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
     if (e.isin) etfByIsin[e.isin] = e;
   });
 
-  // Initially select all ISINs
-  const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(groups.map((g) => g.isin))
-  );
-
-  const toggle = (isin: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(isin)) next.delete(isin);
-      else next.add(isin);
-      return next;
-    });
-
-  const selectAll = () => setSelected(new Set(groups.map((g) => g.isin)));
-  const selectNone = () => setSelected(new Set());
-
   const handleConfirm = () => {
     const result: Record<string, import('../types').PurchaseLot[]> = {};
     groups.forEach(({ isin, lots: groupLots }) => {
-      if (selected.has(isin)) {
-        result[isin] = groupLots.map(({ date, shares, buyPrice }) => ({ date, shares, buyPrice }));
-      }
+      result[isin] = groupLots.map(({ date, shares, buyPrice }) => ({ date, shares, buyPrice }));
     });
     onConfirm(result);
   };
-
-  const selectedCount = selected.size;
 
   return (
     <div
@@ -65,7 +45,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
           <div>
             <h2 className="text-gray-900 dark:text-white font-semibold text-lg">CSV-Import</h2>
             <p className="text-gray-500 dark:text-slate-400 text-xs mt-0.5">
-              Wähle aus, welche Positionen importiert werden sollen
+              Gefundene Käufe werden importiert
             </p>
           </div>
           <button
@@ -87,59 +67,30 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <p className="text-gray-500 dark:text-slate-400 text-sm">
-                Keine ausgeführten Käufe in der CSV gefunden.
+                Keine passenden Käufe in der CSV gefunden.
               </p>
               <p className="text-gray-400 dark:text-slate-500 text-xs mt-1">
-                Nur Zeilen mit Status „ausgeführt" und Richtung „Kauf" werden importiert.
+                Nur Zeilen mit Richtung „Kauf" und bekannter ISIN/WKN werden importiert.
               </p>
             </div>
           </div>
         ) : (
           <>
-            {/* Select all / none */}
-            <div className="flex items-center gap-3 px-5 py-2.5 border-b border-gray-100 dark:border-slate-700/50">
+            {/* Summary */}
+            <div className="px-5 py-2.5 border-b border-gray-100 dark:border-slate-700/50">
               <span className="text-xs text-gray-500 dark:text-slate-400">
                 {groups.length} ISIN{groups.length !== 1 ? 's' : ''} gefunden ·{' '}
                 {lots.length} Kauf{lots.length !== 1 ? 'orders' : 'order'} gesamt
               </span>
-              <div className="ml-auto flex gap-2">
-                <button
-                  onClick={selectAll}
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Alle
-                </button>
-                <span className="text-gray-300 dark:text-slate-600">|</span>
-                <button
-                  onClick={selectNone}
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Keine
-                </button>
-              </div>
             </div>
 
-            {/* ISIN list */}
+            {/* ETF list */}
             <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-700/50">
               {groups.map(({ isin, wkn, lots: groupLots, totalShares }) => {
                 const matched = etfByIsin[isin];
-                const isSelected = selected.has(isin);
 
                 return (
-                  <label
-                    key={isin}
-                    className={`flex items-start gap-3 px-5 py-3.5 cursor-pointer transition-colors ${
-                      isSelected
-                        ? 'bg-blue-50 dark:bg-blue-900/20'
-                        : 'hover:bg-gray-50 dark:hover:bg-slate-700/30'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggle(isin)}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 flex-shrink-0"
-                    />
+                  <div key={isin} className="flex items-start gap-3 px-5 py-3.5">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
@@ -164,31 +115,25 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                         {groupLots.length} Kauf{groupLots.length !== 1 ? 'orders' : 'order'}
                       </p>
                     </div>
-                  </label>
+                  </div>
                 );
               })}
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between gap-3 p-5 border-t border-gray-200 dark:border-slate-700">
-              <span className="text-xs text-gray-500 dark:text-slate-400">
-                {selectedCount} von {groups.length} ausgewählt
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  onClick={handleConfirm}
-                  disabled={selectedCount === 0}
-                  className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Importieren
-                </button>
-              </div>
+            <div className="flex items-center justify-end gap-2 p-5 border-t border-gray-200 dark:border-slate-700">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              >
+                Importieren
+              </button>
             </div>
           </>
         )}
