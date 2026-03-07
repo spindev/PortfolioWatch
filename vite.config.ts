@@ -29,6 +29,9 @@ async function parseGettexCsvBuffer(
 ): Promise<Map<string, { price: number; currency: string }>> {
   const text = gunzipSync(buffer).toString('utf8')
   const prices = new Map<string, { price: number; currency: string }>()
+  // Row format (no header, no quoted fields): ISIN,TIME,CURRENCY,PRICE,AMOUNT
+  // All fields are fixed-format tokens (12-char ISIN, time, 3-char currency,
+  // numeric price, integer amount) so a plain split(',') is safe here.
   for (const line of text.split('\n')) {
     if (!line.trim()) continue
     const parts = line.split(',')
@@ -62,7 +65,7 @@ function gettexDevPlugin(): Plugin {
             }
 
             const isinParam =
-              new URLSearchParams((req.url ?? '').split('?')[1] ?? '').get('isins') ?? ''
+              new URL(req.url ?? '/', 'http://localhost').searchParams.get('isins') ?? ''
             const targetIsins = new Set(isinParam.split(',').filter(Boolean))
 
             const prices = new Map<string, { price: number; currency: string }>()
