@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { StatCard } from './components/StatCard';
 import { PortfolioChart } from './components/PortfolioChart';
-import { AllocationChart } from './components/AllocationChart';
 import { HoldingsTable } from './components/HoldingsTable';
 import { SettingsPage } from './components/SettingsPage';
 import {
@@ -77,7 +76,7 @@ function App() {
       const quotes = await fetchQuotes(tickers);
 
       // Build state
-      const newHoldings = buildHoldings(DEMO_ETFS, quotes, avgBuyPrices);
+      const newHoldings = buildHoldings(DEMO_ETFS, quotes, avgBuyPrices, rawHistories);
       const newPortfolioHistory = buildPortfolioHistory(rawHistories, DEMO_ETFS, avgBuyPrices);
 
       setHoldings(newHoldings);
@@ -201,13 +200,6 @@ function App() {
                 <HoldingsTable
                   holdings={holdings}
                 />
-              </div>
-
-              {/* Allocation by ETF Chart */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-slate-700">
-                <h2 className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg mb-1">Allokation nach ETF</h2>
-                <p className="text-gray-500 dark:text-slate-400 text-xs mb-4">Portfoliogewicht pro Position</p>
-                <AllocationChart holdings={holdings} />
               </div>
 
               {/* Footer */}

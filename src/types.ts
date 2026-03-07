@@ -7,6 +7,17 @@ export interface ETF {
   sector: string;
 }
 
+export interface PurchaseLot {
+  date: string;
+  shares: number;
+  buyPrice: number;
+}
+
+export interface HistoricalClose {
+  date: string;
+  close: number;
+}
+
 export interface Holding {
   id: string;
   etfId: string;
@@ -17,6 +28,8 @@ export interface Holding {
   currentPrice: number;
   currency: string;
   sector: string;
+  lots: PurchaseLot[];
+  history: HistoricalClose[];
 }
 
 export interface PortfolioSnapshot {
