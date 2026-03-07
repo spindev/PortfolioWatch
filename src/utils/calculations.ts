@@ -27,6 +27,11 @@ export function calculateHoldingGainPercent(holding: Holding): number {
   return ((holding.currentPrice - holding.avgBuyPrice) / holding.avgBuyPrice) * 100;
 }
 
+export function calculatePriceGainPercent(currentPrice: number, buyPrice: number): number {
+  if (buyPrice === 0) return 0;
+  return ((currentPrice - buyPrice) / buyPrice) * 100;
+}
+
 export function formatCurrency(value: number, currency = 'EUR', locale = 'de-DE'): string {
   return new Intl.NumberFormat(locale, {
     style: 'currency',

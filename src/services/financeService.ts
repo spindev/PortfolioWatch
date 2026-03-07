@@ -1,4 +1,4 @@
-import { Holding, PortfolioSnapshot } from '../types';
+import { Holding, PortfolioSnapshot, PurchaseLot } from '../types';
 import etfsConfig from '../etfs.json';
 
 // Demo portfolio: 3 ETFs, 100 shares each
@@ -8,11 +8,12 @@ export interface DemoEtfDef {
   name: string;
   sector: string;
   shares: number;
+  lots?: PurchaseLot[];
 }
 
 // Loaded from src/etfs.json — the same file read by scripts/fetch-finance-data.mjs
 // so adding or renaming a ticker in one place automatically updates the other.
-export const DEMO_ETFS: DemoEtfDef[] = etfsConfig;
+export const DEMO_ETFS: DemoEtfDef[] = etfsConfig as DemoEtfDef[];
 
 // ─── Development: Vite proxy forwards /api/yf → query2.finance.yahoo.com ─────
 const YF_DEV_PROXY = '/api/yf';
@@ -216,6 +217,7 @@ export function buildHoldings(
   etfDefs: DemoEtfDef[],
   quotes: QuoteResult[],
   avgBuyPrices: Record<string, number>,
+  rawHistories: Record<string, HistoricalPoint[]> = {},
 ): Holding[] {
   const quoteMap: Record<string, QuoteResult> = {};
   quotes.forEach((q) => { quoteMap[q.ticker] = q; });
@@ -223,8 +225,22 @@ export function buildHoldings(
     const quote = quoteMap[def.ticker];
     const quotePrice = quote?.price ?? 0;
     const currency = quote?.currency ?? 'USD';
-    const avgBuyPrice = avgBuyPrices[def.ticker] ?? quotePrice;
+
+    // If lots are defined, derive avgBuyPrice from weighted average of lots
+    const lots: PurchaseLot[] = (def.lots ?? [])
+      .slice()
+      .sort((a, b) => a.date.localeCompare(b.date));
+    let avgBuyPrice: number;
+    if (lots.length > 0) {
+      const totalShares = lots.reduce((s, l) => s + l.shares, 0);
+      const totalCost = lots.reduce((s, l) => s + l.shares * l.buyPrice, 0);
+      avgBuyPrice = totalShares > 0 ? totalCost / totalShares : avgBuyPrices[def.ticker] ?? quotePrice;
+    } else {
+      avgBuyPrice = avgBuyPrices[def.ticker] ?? quotePrice;
+    }
+
     const currentPrice = quotePrice > 0 ? quotePrice : avgBuyPrice;
+    const history = (rawHistories[def.ticker] ?? []).map((p) => ({ date: p.date, close: p.close }));
     return {
       id: String(i + 1),
       etfId: def.id,
@@ -235,6 +251,8 @@ export function buildHoldings(
       currentPrice,
       currency,
       sector: def.sector,
+      lots,
+      history,
     };
   });
 }

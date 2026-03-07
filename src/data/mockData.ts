@@ -11,6 +11,8 @@ export const mockHoldings: Holding[] = [
     currentPrice: 92.3,
     currency: 'EUR',
     sector: 'Global Equity',
+    lots: [],
+    history: [],
   },
   {
     id: '2',
@@ -22,6 +24,8 @@ export const mockHoldings: Holding[] = [
     currentPrice: 510.5,
     currency: 'USD',
     sector: 'US Equity',
+    lots: [],
+    history: [],
   },
   {
     id: '3',
@@ -33,6 +37,8 @@ export const mockHoldings: Holding[] = [
     currentPrice: 31.2,
     currency: 'USD',
     sector: 'Emerging Markets',
+    lots: [],
+    history: [],
   },
   {
     id: '4',
@@ -44,6 +50,8 @@ export const mockHoldings: Holding[] = [
     currentPrice: 5.3,
     currency: 'EUR',
     sector: 'Bonds',
+    lots: [],
+    history: [],
   },
   {
     id: '5',
@@ -55,6 +63,8 @@ export const mockHoldings: Holding[] = [
     currentPrice: 49.8,
     currency: 'EUR',
     sector: 'European Equity',
+    lots: [],
+    history: [],
   },
 ];
 
