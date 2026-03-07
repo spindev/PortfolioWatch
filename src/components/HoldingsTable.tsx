@@ -7,17 +7,10 @@ const LOCALE = 'de-DE';
 
 interface HoldingsTableProps {
   holdings: Holding[];
-  selectedTicker?: string | null;
-  onSelect?: (ticker: string | null) => void;
 }
 
-export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selectedTicker, onSelect }) => {
+export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
   const totalValue = holdings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0);
-
-  const handleRowClick = (ticker: string) => {
-    if (!onSelect) return;
-    onSelect(selectedTicker === ticker ? null : ticker);
-  };
 
   return (
     <div>
@@ -29,26 +22,15 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
           const gainPct = calculateHoldingGainPercent(holding);
           const allocation = totalValue > 0 ? (value / totalValue) * 100 : 0;
           const isPositive = gain >= 0;
-          const isSelected = selectedTicker === holding.ticker;
 
           return (
             <div
               key={holding.id}
-              onClick={() => handleRowClick(holding.ticker)}
-              className={`rounded-lg border p-3 transition-colors ${
-                onSelect ? 'cursor-pointer' : ''
-              } ${
-                isSelected
-                  ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700/50'
-                  : 'bg-gray-50 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700/30'
-              }`}
+              className="rounded-lg border p-3 bg-gray-50 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700/50"
             >
-              {/* Row 1: ticker + P&L % */}
+              {/* Row 1: ticker + P&L % + allocation */}
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  {isSelected && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                  )}
                   <span className="font-semibold text-gray-900 dark:text-white text-sm">{holding.ticker}</span>
                   <span className={`text-xs font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatPercent(gainPct)}
@@ -60,8 +42,12 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
               {/* Row 2: full name */}
               <p className="text-gray-500 dark:text-slate-400 text-xs truncate mb-2">{holding.name}</p>
 
-              {/* Row 3: current / value / gain */}
-              <div className="grid grid-cols-3 gap-1 text-xs">
+              {/* Row 3: shares / current / value / gain */}
+              <div className="grid grid-cols-4 gap-1 text-xs">
+                <div>
+                  <p className="text-gray-400 dark:text-slate-500 mb-0.5">Anteile</p>
+                  <p className="text-gray-700 dark:text-slate-300 font-medium">{holding.shares}</p>
+                </div>
                 <div>
                   <p className="text-gray-400 dark:text-slate-500 mb-0.5">Aktuell</p>
                   <p className="text-gray-700 dark:text-slate-300 font-medium">{formatCurrency(holding.currentPrice, CURRENCY, LOCALE)}</p>
@@ -80,11 +66,6 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
             </div>
           );
         })}
-        {onSelect && (
-          <p className="text-gray-400 dark:text-slate-500 text-xs mt-2 text-center">
-            Zeile anklicken für Kursentwicklung
-          </p>
-        )}
       </div>
 
       {/* ── Desktop table layout (sm+) ── */}
@@ -109,29 +90,16 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
               const gainPct = calculateHoldingGainPercent(holding);
               const allocation = totalValue > 0 ? (value / totalValue) * 100 : 0;
               const isPositive = gain >= 0;
-              const isSelected = selectedTicker === holding.ticker;
 
               return (
                 <tr
                   key={holding.id}
-                  onClick={() => handleRowClick(holding.ticker)}
-                  className={`border-b border-gray-100 dark:border-slate-700/50 transition-colors ${
-                    onSelect ? 'cursor-pointer' : ''
-                  } ${
-                    isSelected
-                      ? 'bg-blue-50 dark:bg-blue-900/30'
-                      : 'hover:bg-gray-50 dark:hover:bg-slate-700/30'
-                  }`}
+                  className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors"
                 >
                   <td className="py-3 px-2">
-                    <div className="flex items-center gap-2">
-                      {isSelected && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                      )}
-                      <div>
-                        <div className="font-semibold text-gray-900 dark:text-white">{holding.ticker}</div>
-                        <div className="text-gray-500 dark:text-slate-400 text-xs truncate max-w-[180px]">{holding.name}</div>
-                      </div>
+                    <div>
+                      <div className="font-semibold text-gray-900 dark:text-white">{holding.ticker}</div>
+                      <div className="text-gray-500 dark:text-slate-400 text-xs truncate max-w-[180px]">{holding.name}</div>
                     </div>
                   </td>
                   <td className="text-right py-3 px-2 text-gray-700 dark:text-slate-300">{holding.shares}</td>
@@ -168,11 +136,6 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
             })}
           </tbody>
         </table>
-        {onSelect && (
-          <p className="text-gray-400 dark:text-slate-500 text-xs mt-3 text-center">
-            Zeile anklicken für Kursentwicklung
-          </p>
-        )}
       </div>
     </div>
   );
