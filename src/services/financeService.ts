@@ -182,18 +182,24 @@ export function buildPortfolioHistory(
     });
   });
 
-  // Use dates where every ETF has a data point
-  const firstTicker = etfDefs[0].ticker;
+  // Only consider ETFs that have historical data; skip those with empty history
+  // so that a single failed ticker doesn't blank out the whole chart.
+  const etfsWithData = etfDefs.filter((def) => (etfHistories[def.ticker] ?? []).length > 0);
+  if (etfsWithData.length === 0) return [];
+
+  // Use dates where every ETF *with data* has a data point
+  const firstTicker = etfsWithData[0].ticker;
   const commonDates = (etfHistories[firstTicker] ?? [])
     .map((p) => p.date)
-    .filter((date) => etfDefs.every((def) => priceMaps[def.ticker][date] != null))
+    .filter((date) => etfsWithData.every((def) => priceMaps[def.ticker][date] != null))
     .sort();
 
   return commonDates.map((date) => {
     let totalValue = 0;
     let totalCost = 0;
     etfDefs.forEach((def) => {
-      const price = priceMaps[def.ticker][date];
+      // Fall back to avg buy price for ETFs whose history failed to load
+      const price = priceMaps[def.ticker][date] ?? avgBuyPrices[def.ticker] ?? 0;
       totalValue += def.shares * price;
       totalCost += def.shares * (avgBuyPrices[def.ticker] ?? price);
     });

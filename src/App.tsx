@@ -49,6 +49,12 @@ function App() {
 
   const isDark = settings.theme === 'dark';
 
+  // Keep the <html> element in sync with the current theme so Tailwind's
+  // `dark:` variants work correctly (they require `.dark` on an ancestor).
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
+
   /** One-time load: fetch 1-year history + first set of prices */
   const loadInitialData = useCallback(async () => {
     setIsLoading(true);
@@ -116,7 +122,7 @@ function App() {
     : null;
 
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100 ${isDark ? 'dark' : ''}`}>
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
       <Header
         page={page}
         onNavigate={setPage}
