@@ -41,7 +41,8 @@ jobs:
           # Add this as a GitHub Actions repository secret:
           #   Settings → Secrets and variables → Actions → New repository secret
           #   Name: VITE_YF_PROXY_URL
-          #   Value: https://portfoliowatch-yf-proxy.<your-account>.workers.dev
+          #   Value: https://portfoliowatch-yf-proxy.vercel.app
+          # See vercel-proxy/ for deployment instructions.
           VITE_YF_PROXY_URL: ${{ secrets.VITE_YF_PROXY_URL }}
 
       - name: Upload artifact

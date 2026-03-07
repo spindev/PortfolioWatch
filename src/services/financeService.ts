@@ -36,10 +36,10 @@ export const DEMO_ETFS: DemoEtfDef[] = [
 // In development the vite proxy forwards /api/yf → https://query2.finance.yahoo.com
 const YF_DEV_PROXY = '/api/yf';
 
-// Self-controlled Yahoo Finance CORS proxy (Cloudflare Worker).
-// Set VITE_YF_PROXY_URL in your environment to the deployed worker URL, e.g.:
-//   VITE_YF_PROXY_URL=https://portfoliowatch-yf-proxy.<account>.workers.dev
-// See cloudflare-worker/ for the worker source and deployment instructions.
+// Self-controlled Yahoo Finance CORS proxy (Vercel edge function).
+// Set VITE_YF_PROXY_URL in your environment to the deployed proxy URL, e.g.:
+//   VITE_YF_PROXY_URL=https://portfoliowatch-yf-proxy.vercel.app
+// See vercel-proxy/ for the function source and deployment instructions.
 // When this is configured, third-party CORS proxy services are not used.
 const YF_PROXY_URL = (import.meta.env.VITE_YF_PROXY_URL as string | undefined)?.replace(/\/$/, '');
 
@@ -61,8 +61,8 @@ async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Res
  * development or through the configured self-controlled CORS proxy in
  * production.
  *
- * Set VITE_YF_PROXY_URL to the URL of the deployed Cloudflare Worker
- * (see cloudflare-worker/) so that CORS headers are added server-side
+ * Set VITE_YF_PROXY_URL to the URL of the deployed Vercel edge function
+ * (see vercel-proxy/) so that CORS headers are added server-side
  * and no third-party proxy services are required.
  */
 async function fetchYF(path: string, options?: RequestInit): Promise<Response> {
@@ -73,7 +73,7 @@ async function fetchYF(path: string, options?: RequestInit): Promise<Response> {
   if (!YF_PROXY_URL) {
     throw new Error(
       'No Yahoo Finance proxy configured. ' +
-        'Deploy the Cloudflare Worker in cloudflare-worker/ and set ' +
+        'Deploy the Vercel edge function in vercel-proxy/ and set ' +
         'VITE_YF_PROXY_URL to its URL.',
     );
   }

@@ -36,22 +36,23 @@ not. This is a browser security restriction that cannot be bypassed.
 
 The solution is a small self-controlled proxy server that fetches from Yahoo Finance
 **server-to-server** (where CORS does not apply) and then forwards the response to the
-browser with the correct CORS header. The `cloudflare-worker/` directory contains a
-ready-to-deploy Cloudflare Worker that does exactly this.
+browser with the correct CORS header. The `vercel-proxy/` directory contains a
+ready-to-deploy [Vercel](https://vercel.com) edge function that does exactly this.
+Vercel is free for this scale (no credit card required).
 
 ### One-time setup (takes ~5 minutes)
 
-**1. Deploy the Cloudflare Worker**
+**1. Deploy the Vercel proxy**
 
 ```bash
-npm install -g wrangler
-cd cloudflare-worker
-wrangler login
-wrangler deploy
+npm install -g vercel
+cd vercel-proxy
+vercel deploy --prod
 ```
 
-Note the worker URL printed after deployment, e.g.
-`https://portfoliowatch-yf-proxy.<account>.workers.dev`.
+On first run `vercel` opens a browser to log in with your GitHub account. Note the
+deployment URL printed at the end, e.g.
+`https://portfoliowatch-yf-proxy.vercel.app`.
 
 **2. Add the URL as a GitHub Actions repository secret**
 
@@ -59,7 +60,7 @@ Go to **Settings → Secrets and variables → Actions → New repository secret
 
 | Name | Value |
 |---|---|
-| `VITE_YF_PROXY_URL` | `https://portfoliowatch-yf-proxy.<account>.workers.dev` |
+| `VITE_YF_PROXY_URL` | `https://portfoliowatch-yf-proxy.vercel.app` |
 
 Vite reads this variable at **build time** (not runtime) and bakes it into the
 JavaScript bundle. GitHub Pages hosts the resulting static files — no runtime
