@@ -46,7 +46,7 @@ const CORS_PROXIES: Array<(url: string) => string> = [
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
 ];
 
-const FETCH_TIMEOUT_MS = 10000;
+const FETCH_TIMEOUT_MS = 30000;
 
 async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Response> {
   const controller = new AbortController();
@@ -71,6 +71,20 @@ async function fetchYF(path: string, options?: RequestInit): Promise<Response> {
 
   const directUrl = `${YF_DIRECT_BASE}${path}`;
   let lastError: Error = new Error('No CORS proxy available');
+
+  // Try the direct Yahoo Finance URL first.  This succeeds when the browser
+  // permits cross-origin requests to the host (e.g. it has been added to the
+  // site's CSP connect-src whitelist or Yahoo Finance returns permissive CORS
+  // headers for the request).
+  try {
+    const res = await fetchWithTimeout(directUrl, options);
+    if (res.ok) return res;
+    lastError = new Error(`Direct fetch returned ${res.status}`);
+  } catch (err) {
+    lastError = err instanceof Error ? err : new Error(String(err));
+  }
+
+  // Fall back to CORS proxies when direct access is blocked.
   for (const buildProxy of CORS_PROXIES) {
     const proxyUrl = buildProxy(directUrl);
     try {
