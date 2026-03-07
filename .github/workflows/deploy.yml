@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+  schedule:
+    # Re-deploy every hour on weekdays 8 AM–9 PM UTC, covering EU market hours
+    # (8 AM–4 PM UTC) and US market hours (2:30 PM–9 PM UTC)
+    - cron: '0 8-21 * * 1-5'
   workflow_dispatch:
 
 permissions:
@@ -34,16 +38,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fetch finance data
+        # Fetches Yahoo Finance data server-side (no CORS) and writes static
+        # JSON files to public/data/ so the app can read them as same-origin
+        # resources on GitHub Pages — no proxy or external account required.
+        run: node scripts/fetch-finance-data.mjs
+
       - name: Build
         run: npm run build
-        env:
-          # Baked into the JS bundle at build time by Vite.
-          # Add this as a GitHub Actions repository secret:
-          #   Settings → Secrets and variables → Actions → New repository secret
-          #   Name: VITE_YF_PROXY_URL
-          #   Value: https://portfoliowatch-yf-proxy.vercel.app
-          # See vercel-proxy/ for deployment instructions.
-          VITE_YF_PROXY_URL: ${{ secrets.VITE_YF_PROXY_URL }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -60,3 +62,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+

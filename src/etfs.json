@@ -1,0 +1,23 @@
+[
+  {
+    "id": "world",
+    "ticker": "URTH",
+    "name": "iShares MSCI World ETF",
+    "sector": "Global Equity",
+    "shares": 100
+  },
+  {
+    "id": "em",
+    "ticker": "EEM",
+    "name": "iShares MSCI Emerging Markets ETF",
+    "sector": "Emerging Markets",
+    "shares": 100
+  },
+  {
+    "id": "esg",
+    "ticker": "LCEU.SW",
+    "name": "iShares MSCI Europe ESG Enhanced ETF",
+    "sector": "ESG Europe",
+    "shares": 100
+  }
+]

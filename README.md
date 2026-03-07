@@ -27,49 +27,24 @@ npm run dev
 
 Then open [http://localhost:5173/PortfolioWatch/](http://localhost:5173/PortfolioWatch/).
 
-## Production Setup — Yahoo Finance CORS Proxy
+## How market data works
 
 Browsers enforce the **Same-Origin Policy**: a page served from `spindev.github.io`
 cannot read responses from `query2.finance.yahoo.com` unless Yahoo Finance explicitly
-grants permission via `Access-Control-Allow-Origin` response headers — which it does
-not. This is a browser security restriction that cannot be bypassed.
+grants permission via `Access-Control-Allow-Origin` headers — which it does not.
 
-The solution is a small self-controlled proxy server that fetches from Yahoo Finance
-**server-to-server** (where CORS does not apply) and then forwards the response to the
-browser with the correct CORS header. The `vercel-proxy/` directory contains a
-ready-to-deploy [Vercel](https://vercel.com) edge function that does exactly this.
-Vercel is free for this scale (no credit card required).
+This app solves that without any external proxy service or third-party account:
 
-### One-time setup (takes ~5 minutes)
-
-**1. Deploy the Vercel proxy**
-
-```bash
-npm install -g vercel
-cd vercel-proxy
-vercel deploy --prod
-```
-
-On first run `vercel` opens a browser to log in with your GitHub account. Note the
-deployment URL printed at the end, e.g.
-`https://portfoliowatch-yf-proxy.vercel.app`.
-
-**2. Add the URL as a GitHub Actions repository secret**
-
-Go to **Settings → Secrets and variables → Actions → New repository secret** and add:
-
-| Name | Value |
-|---|---|
-| `VITE_YF_PROXY_URL` | `https://portfoliowatch-yf-proxy.vercel.app` |
-
-Vite reads this variable at **build time** (not runtime) and bakes it into the
-JavaScript bundle. GitHub Pages hosts the resulting static files — no runtime
-environment configuration is needed on GitHub Pages itself.
-
-**3. Trigger a new deployment**
-
-Push any commit to `main` (or manually trigger the workflow). The build will pick up
-the secret and the live site will start fetching market data through your own proxy.
+1. The **GitHub Actions deploy workflow** runs `node scripts/fetch-finance-data.mjs`
+   **before** the Vite build. That script fetches quotes and historical data from
+   Yahoo Finance **server-side** (no CORS) and writes them as static JSON files to
+   `public/data/`.
+2. Vite copies `public/data/*.json` into `dist/data/` and GitHub Pages serves them
+   at `spindev.github.io/PortfolioWatch/data/*.json` — the **same origin** as the app.
+3. The app reads those files at runtime with a plain `fetch()` call — no proxy,
+   no accounts, no secrets needed.
+4. A **scheduled workflow** (`cron: '0 * * * *'`) re-runs the whole pipeline
+   every hour so market data stays fresh automatically.
 
 ## Build & Deploy
 
