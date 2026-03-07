@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 interface HeaderProps {
   page: 'portfolio' | 'settings';
@@ -6,9 +6,21 @@ interface HeaderProps {
   lastUpdated: Date | null;
   isLoading: boolean;
   hasError: boolean;
+  onCsvUpload?: (file: File) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, isLoading, hasError }) => {
+export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, isLoading, hasError, onCsvUpload }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onCsvUpload) {
+      onCsvUpload(file);
+    }
+    // Reset so the same file can be selected again
+    e.target.value = '';
+  };
+
   return (
     <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-4 sm:px-6 py-4 sticky top-0 z-10">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
@@ -43,6 +55,25 @@ export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, i
             <span>Wird geladen…</span>
           )}
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          className="hidden"
+          onChange={handleFileChange}
+          aria-label="CSV-Datei auswählen"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="p-2 rounded-lg transition-colors text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700"
+          aria-label="CSV importieren"
+          title="CSV importieren"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+        </button>
 
         <button
           onClick={() => onNavigate(page === 'settings' ? 'portfolio' : 'settings')}

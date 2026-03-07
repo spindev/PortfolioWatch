@@ -51,7 +51,10 @@ const ChartTooltip = ({
 
 // ── ETF price area chart ─────────────────────────────────────────────────────
 const EtfChart: React.FC<{ holding: Holding; compact?: boolean }> = ({ holding, compact = false }) => {
-  const data = holding.history;
+  // Limit to last 12 months for a readable x-axis
+  const cutoff = new Date(new Date().setFullYear(new Date().getFullYear() - 1));
+  const data = holding.history.filter((d) => new Date(d.date) >= cutoff);
+  // Show ~6 ticks (one every ~2 months) regardless of data density
   const tickInterval = Math.max(1, Math.floor(data.length / 6));
 
   if (data.length === 0) {
@@ -81,7 +84,7 @@ const EtfChart: React.FC<{ holding: Holding; compact?: boolean }> = ({ holding, 
             interval={tickInterval}
             tickFormatter={(val) => {
               const d = new Date(val);
-              return d.toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' });
+              return d.toLocaleDateString(LOCALE, { month: 'short', year: '2-digit' });
             }}
           />
           <YAxis
@@ -176,47 +179,6 @@ const LotsTable: React.FC<{ holding: Holding }> = ({ holding }) => {
             );
           })}
         </tbody>
-        <tfoot>
-          <tr className="border-t-2 border-gray-200 dark:border-slate-600 font-semibold">
-            <td className="py-2.5 px-2 text-gray-700 dark:text-slate-300">Gesamt</td>
-            <td className="text-right py-2.5 px-2 text-gray-700 dark:text-slate-300">
-              {lots.reduce((s, l) => s + l.shares, 0)}
-            </td>
-            <td className="text-right py-2.5 px-2 text-gray-500 dark:text-slate-400 text-xs font-normal">
-              Ø {formatCurrency(
-                lots.reduce((s, l) => s + l.shares * l.buyPrice, 0) /
-                  lots.reduce((s, l) => s + l.shares, 0),
-                CURRENCY,
-                LOCALE,
-              )}
-            </td>
-            <td className="text-right py-2.5 px-2 text-gray-700 dark:text-slate-300">
-              {formatCurrency(lots.reduce((s, l) => s + l.shares * l.buyPrice, 0), CURRENCY, LOCALE)}
-            </td>
-            <td className="text-right py-2.5 px-2 text-gray-900 dark:text-white">
-              {formatCurrency(lots.reduce((s, l) => s + l.shares * currentPrice, 0), CURRENCY, LOCALE)}
-            </td>
-            {(() => {
-              const totalCost = lots.reduce((s, l) => s + l.shares * l.buyPrice, 0);
-              const totalCurrentValue = lots.reduce((s, l) => s + l.shares * currentPrice, 0);
-              const totalGain = totalCurrentValue - totalCost;
-              const totalShares = lots.reduce((s, l) => s + l.shares, 0);
-              const weightedAvgBuy = totalShares > 0 ? totalCost / totalShares : 0;
-              const totalGainPct = calculatePriceGainPercent(currentPrice, weightedAvgBuy);
-              const isPos = totalGain >= 0;
-              return (
-                <>
-                  <td className={`text-right py-2.5 px-2 ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {isPos ? '+' : ''}{formatCurrency(totalGain, CURRENCY, LOCALE)}
-                  </td>
-                  <td className={`text-right py-2.5 px-2 ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {formatPercent(totalGainPct)}
-                  </td>
-                </>
-              );
-            })()}
-          </tr>
-        </tfoot>
       </table>
     </div>
   );
@@ -233,14 +195,6 @@ const LotsCards: React.FC<{ holding: Holding }> = ({ holding }) => {
       </div>
     );
   }
-
-  const totalShares = lots.reduce((s, l) => s + l.shares, 0);
-  const totalCost = lots.reduce((s, l) => s + l.shares * l.buyPrice, 0);
-  const totalCurrentValue = lots.reduce((s, l) => s + l.shares * currentPrice, 0);
-  const totalGain = totalCurrentValue - totalCost;
-  const weightedAvgBuy = totalShares > 0 ? totalCost / totalShares : 0;
-  const totalGainPct = calculatePriceGainPercent(currentPrice, weightedAvgBuy);
-  const isTotalPos = totalGain >= 0;
 
   return (
     <div className="space-y-2">
@@ -290,34 +244,6 @@ const LotsCards: React.FC<{ holding: Holding }> = ({ holding }) => {
           </div>
         );
       })}
-
-      {/* Summary row */}
-      <div className="rounded-md border-t-2 border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-800/60 p-3 font-semibold">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-gray-600 dark:text-slate-300">Gesamt</span>
-          <span className={`text-sm font-bold ${isTotalPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-            {isTotalPos ? '+' : ''}{formatCurrency(totalGain, CURRENCY, LOCALE)}&nbsp;({formatPercent(totalGainPct)})
-          </span>
-        </div>
-        <div className="grid grid-cols-4 gap-1 text-xs">
-          <div>
-            <p className="text-gray-400 dark:text-slate-500 mb-0.5">Anteile</p>
-            <p className="text-gray-700 dark:text-slate-300">{totalShares}</p>
-          </div>
-          <div>
-            <p className="text-gray-400 dark:text-slate-500 mb-0.5">Ø Kurs</p>
-            <p className="text-gray-700 dark:text-slate-300">{formatCurrency(weightedAvgBuy, CURRENCY, LOCALE)}</p>
-          </div>
-          <div>
-            <p className="text-gray-400 dark:text-slate-500 mb-0.5">Kaufwert</p>
-            <p className="text-gray-700 dark:text-slate-300">{formatCurrency(totalCost, CURRENCY, LOCALE)}</p>
-          </div>
-          <div>
-            <p className="text-gray-400 dark:text-slate-500 mb-0.5">Akt. Wert</p>
-            <p className="text-gray-900 dark:text-white">{formatCurrency(totalCurrentValue, CURRENCY, LOCALE)}</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
