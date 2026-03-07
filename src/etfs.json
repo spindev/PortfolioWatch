@@ -2,6 +2,8 @@
   {
     "id": "world",
     "ticker": "EUNL.DE",
+    "isin": "IE00B4L5Y983",
+    "wkn": "A0RPWH",
     "name": "iShares Core MSCI World UCITS ETF",
     "sector": "Globale Aktien",
     "shares": 100,
@@ -15,6 +17,8 @@
   {
     "id": "em",
     "ticker": "IS3N.DE",
+    "isin": "IE00BKM4GZ66",
+    "wkn": "A111X9",
     "name": "iShares Core MSCI EM IMI UCITS ETF",
     "sector": "Schwellenländer",
     "shares": 100,
@@ -27,6 +31,8 @@
   {
     "id": "europe",
     "ticker": "EXSA.DE",
+    "isin": "DE0005933956",
+    "wkn": "593395",
     "name": "iShares Core EURO STOXX 50 UCITS ETF",
     "sector": "Eurozone Aktien",
     "shares": 100,
@@ -35,5 +41,35 @@
       { "date": "2021-11-15", "shares": 30, "buyPrice": 43.80 },
       { "date": "2022-10-03", "shares": 40, "buyPrice": 35.20 }
     ]
+  },
+  {
+    "id": "world-sri",
+    "ticker": "SEAC.DE",
+    "isin": "LU0950674332",
+    "wkn": "A1W3CQ",
+    "name": "UBS MSCI World Socially Responsible UCITS ETF",
+    "sector": "Globale Aktien",
+    "shares": 0,
+    "lots": []
+  },
+  {
+    "id": "emu-esg",
+    "ticker": "EMNE.DE",
+    "isin": "IE00BHZPHZ28",
+    "wkn": "A2PDNS",
+    "name": "iShares MSCI EMU ESG Enhanced UCITS ETF",
+    "sector": "Eurozone Aktien",
+    "shares": 0,
+    "lots": []
+  },
+  {
+    "id": "em-xtrackers",
+    "ticker": "XMME.DE",
+    "isin": "IE00BTJRMP35",
+    "wkn": "A12GVR",
+    "name": "Xtrackers MSCI Emerging Markets UCITS ETF",
+    "sector": "Schwellenländer",
+    "shares": 0,
+    "lots": []
   }
 ]

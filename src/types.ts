@@ -22,6 +22,8 @@ export interface Holding {
   id: string;
   etfId: string;
   ticker: string;
+  isin?: string;
+  wkn?: string;
   name: string;
   shares: number;
   avgBuyPrice: number;
