@@ -115,15 +115,35 @@ function App() {
     setSettings(s);
   };
 
-  /** Parse a selected CSV file and open the ISIN selection modal */
-  const handleCsvUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const parsed = parseBrokerCsv(text);
-      setCsvImportLots(parsed);
-    };
-    reader.readAsText(file, 'UTF-8');
+  /** Read a file as text with the given encoding */
+  const readFileAsText = (file: File, encoding: string): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve((e.target?.result as string) ?? '');
+      reader.onerror = reject;
+      reader.readAsText(file, encoding);
+    });
+
+  /** Parse a selected CSV file and open the import confirmation modal */
+  const handleCsvUpload = async (file: File) => {
+    // Build ISIN/WKN sets from etfs.json for pre-filtering (computed once, reused for both encoding attempts)
+    const knownIsins = new Set(DEMO_ETFS.map((e) => e.isin).filter(Boolean) as string[]);
+    const knownWkns = new Set(DEMO_ETFS.map((e) => e.wkn).filter(Boolean) as string[]);
+
+    /** Parse raw CSV text and keep only lots matching a known ETF by ISIN or WKN */
+    const parseAndFilter = (text: string) =>
+      parseBrokerCsv(text).filter(
+        (l) => knownIsins.has(l.isin) || (l.wkn && knownWkns.has(l.wkn)),
+      );
+
+    // Try UTF-8 first; fall back to windows-1252 (common for German broker exports —
+    // the ü in column names like "Ausführung Datum" gets garbled when read as UTF-8)
+    let filtered = parseAndFilter(await readFileAsText(file, 'UTF-8'));
+    if (filtered.length === 0) {
+      filtered = parseAndFilter(await readFileAsText(file, 'windows-1252'));
+    }
+
+    setCsvImportLots(filtered);
   };
 
   /** Called when the user confirms their ISIN selection in the modal */

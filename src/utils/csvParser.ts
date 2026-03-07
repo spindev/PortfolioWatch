@@ -7,13 +7,14 @@ export interface CsvLot extends PurchaseLot {
 }
 
 /**
- * Parse a broker CSV export with the following tab-separated columns:
- *   ISIN | WKN | Anzahl | Anzahl storniert | Status | Orderart | Limit | Stop |
+ * Parse a broker CSV export with the following tab-separated columns
+ * (an optional leading "Name" / "Bezeichnung" column is supported):
+ *   [Name] | ISIN | WKN | Anzahl | Anzahl storniert | Status | Orderart | Limit | Stop |
  *   Erstellt Datum | Erstellt Zeit | Gültig bis | Richtung | Wert | Wert storniert |
  *   Mindermengenzuschlag | Ausführung Datum | Ausführung Zeit | Ausführung Kurs |
  *   Anzahl ausgeführt | Anzahl offen | Gestrichen Datum | Gestrichen Zeit
  *
- * Only rows where Status = "ausgeführt" AND Richtung = "Kauf" are returned.
+ * Only rows where Richtung = "Kauf" are returned (Status is not checked).
  */
 export function parseBrokerCsv(text: string): CsvLot[] {
   // Strip UTF-8 BOM and normalise line endings
@@ -26,14 +27,13 @@ export function parseBrokerCsv(text: string): CsvLot[] {
   const idx = (name: string): number => header.indexOf(name);
   const isinIdx = idx('ISIN');
   const wknIdx = idx('WKN');
-  const statusIdx = idx('Status');
   const richtungIdx = idx('Richtung');
   const datumIdx = idx('Ausführung Datum');
   const kursIdx = idx('Ausführung Kurs');
   const anzahlIdx = idx('Anzahl ausgeführt');
 
   // Bail out early if required columns are missing
-  if ([isinIdx, statusIdx, richtungIdx, datumIdx, kursIdx, anzahlIdx].some((i) => i === -1)) {
+  if ([isinIdx, richtungIdx, datumIdx, kursIdx, anzahlIdx].some((i) => i === -1)) {
     return [];
   }
 
@@ -45,8 +45,8 @@ export function parseBrokerCsv(text: string): CsvLot[] {
 
     const cols = line.split('\t').map((c) => c.trim());
 
-    // Only executed buy orders
-    if (cols[statusIdx] !== 'ausgeführt' || cols[richtungIdx] !== 'Kauf') continue;
+    // Only buy orders
+    if (cols[richtungIdx] !== 'Kauf') continue;
 
     const isin = cols[isinIdx] ?? '';
     const wkn = wknIdx !== -1 ? (cols[wknIdx] ?? '') : '';
