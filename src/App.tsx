@@ -47,6 +47,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [dataUpdatedAt, setDataUpdatedAt] = useState<string | null>(null);
 
   // CSV import state
   const importedLotsRef = useRef<Record<string, PurchaseLot[]>>(getImportedLots());
@@ -84,7 +85,7 @@ function App() {
       });
 
       // Fetch current quotes
-      const quotes = await fetchQuotes(tickers);
+      const { quotes, updatedAt } = await fetchQuotes(tickers);
 
       // Build state — merge in any CSV-imported lots from the ref
       const newHoldings = buildHoldings(DEMO_ETFS, quotes, avgBuyPrices, rawHistories, importedLotsRef.current, importedSalesRef.current);
@@ -116,6 +117,7 @@ function App() {
       setHoldings(newHoldings);
       setPortfolioHistory(newPortfolioHistory);
       setLastUpdated(new Date());
+      setDataUpdatedAt(updatedAt);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Daten konnten nicht geladen werden');
     } finally {
@@ -338,6 +340,19 @@ function App() {
               {/* Footer */}
               <footer className="text-center text-gray-400 dark:text-slate-500 text-xs pb-4">
                 PortfolioWatch — Kurse via Yahoo Finance
+                {dataUpdatedAt && (
+                  <span className="block mt-0.5">
+                    Datenstand:{' '}
+                    {new Date(dataUpdatedAt).toLocaleString(LOCALE, {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'Europe/Berlin',
+                    })} Uhr
+                  </span>
+                )}
               </footer>
             </>
           )}
