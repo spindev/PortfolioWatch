@@ -34,9 +34,12 @@ const ChartTooltip = ({
 }) => {
   if (active && payload && payload.length) {
     const close = payload[0]?.value as number;
+    const formattedDate = label
+      ? new Date(label).toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : label;
     return (
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg p-3 text-sm shadow-lg">
-        <p className="text-gray-600 dark:text-slate-300 mb-1">{label}</p>
+        <p className="text-gray-600 dark:text-slate-300 mb-1">{formattedDate}</p>
         <p className="text-blue-600 dark:text-blue-400 font-medium">
           {formatCurrency(close, CURRENCY, LOCALE)}
         </p>
@@ -78,7 +81,7 @@ const EtfChart: React.FC<{ holding: Holding; compact?: boolean }> = ({ holding, 
             interval={tickInterval}
             tickFormatter={(val) => {
               const d = new Date(val);
-              return `${d.getDate()}.${d.getMonth() + 1}.${String(d.getFullYear()).slice(-2)}`;
+              return d.toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' });
             }}
           />
           <YAxis
@@ -323,50 +326,41 @@ const LotsCards: React.FC<{ holding: Holding }> = ({ holding }) => {
 export const HoldingDetail: React.FC<HoldingDetailProps> = ({ holding }) => {
   const [activeTab, setActiveTab] = useState<DetailTab>('chart');
 
+  const tabButton = (tab: DetailTab, label: string) => (
+    <button
+      onClick={() => setActiveTab(tab)}
+      className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
+        activeTab === tab
+          ? 'bg-blue-600 text-white'
+          : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div className="mt-3 pt-4 border-t border-gray-200 dark:border-slate-600">
 
-      {/* ── Mobile layout: chart + lots stacked (all info visible at once) ── */}
-      <div className="sm:hidden space-y-5">
-        <div>
-          <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-            Kursentwicklung
-          </p>
+      {/* ── Mobile layout: tabs with mobile-optimised content ── */}
+      <div className="sm:hidden">
+        <div className="flex gap-1 mb-4">
+          {tabButton('chart', 'Entwicklung')}
+          {tabButton('lots', 'Käufe')}
+        </div>
+        {activeTab === 'chart' ? (
           <EtfChart holding={holding} compact />
-        </div>
-        <div>
-          <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-            Käufe
-          </p>
+        ) : (
           <LotsCards holding={holding} />
-        </div>
+        )}
       </div>
 
-      {/* ── Desktop layout: tab switcher ── */}
+      {/* ── Desktop layout: tabs with full table ── */}
       <div className="hidden sm:block">
         <div className="flex gap-1 mb-4">
-          <button
-            onClick={() => setActiveTab('chart')}
-            className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
-              activeTab === 'chart'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
-            }`}
-          >
-            Entwicklung
-          </button>
-          <button
-            onClick={() => setActiveTab('lots')}
-            className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
-              activeTab === 'lots'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
-            }`}
-          >
-            Käufe
-          </button>
+          {tabButton('chart', 'Entwicklung')}
+          {tabButton('lots', 'Käufe')}
         </div>
-
         {activeTab === 'chart' ? (
           <EtfChart holding={holding} />
         ) : (
