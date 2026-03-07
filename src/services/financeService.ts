@@ -38,15 +38,19 @@ const YF_DIRECT_BASE = 'https://query2.finance.yahoo.com';
 // In development the vite proxy forwards /api/yf → https://query2.finance.yahoo.com
 const YF_DEV_PROXY = '/api/yf';
 
-// Production CORS proxies tried in order.  The target URL is always
+// Production CORS proxies tried in parallel.  The target URL is always
 // percent-encoded so that query-string delimiters (? &) in the Yahoo Finance
 // URL are not misinterpreted as proxy query parameters.
+// Multiple proxies are listed so that if one service is down or rate-limited
+// the first successful response from any of the others will be used.
 const CORS_PROXIES: Array<(url: string) => string> = [
   (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url) => `https://api.cors.lol/?url=${encodeURIComponent(url)}`,
+  (url) => `https://proxy.corsfix.com/?${encodeURIComponent(url)}`,
 ];
 
-const FETCH_TIMEOUT_MS = 10000;
+const FETCH_TIMEOUT_MS = 15000;
 
 async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Response> {
   const controller = new AbortController();
@@ -82,7 +86,8 @@ function firstSuccess(promises: Promise<Response>[]): Promise<Response> {
  * Fetch a Yahoo Finance path, routing through the Vite dev-proxy in
  * development or racing all public CORS proxies in parallel in production.
  * Using a direct fetch to query2.finance.yahoo.com is skipped in production
- * because browsers always block it with a CORS error.
+ * because browsers always block it with a CORS error.  All proxies are
+ * started simultaneously; the first successful response wins.
  */
 async function fetchYF(path: string, options?: RequestInit): Promise<Response> {
   if (import.meta.env.DEV) {
