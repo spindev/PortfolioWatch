@@ -74,8 +74,8 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange 
           axisLine={false}
           interval={tickInterval}
           tickFormatter={(val) => {
-            const d = new Date(val);
-            return `${d.getDate()}.${d.getMonth() + 1}.`;
+            const [_year, month, day] = (val as string).split('-');
+            return `${parseInt(day, 10)}.${parseInt(month, 10)}.`;
           }}
         />
         <YAxis

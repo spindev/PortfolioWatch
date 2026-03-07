@@ -43,6 +43,12 @@ export interface QuoteResult {
   currency: string;
 }
 
+export interface QuotesData {
+  quotes: QuoteResult[];
+  /** ISO timestamp of when the static data file was generated; null in development */
+  updatedAt: string | null;
+}
+
 export interface HistoricalPoint {
   date: string;
   close: number;
@@ -129,9 +135,9 @@ export function applyFifoSales(
  *   build by scripts/fetch-finance-data.mjs and served from the same origin.
  *   No CORS proxy or external account is required.
  */
-export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
+export async function fetchQuotes(tickers: string[]): Promise<QuotesData> {
   if (import.meta.env.DEV) {
-    return Promise.all(
+    const quotes = await Promise.all(
       tickers.map(async (ticker): Promise<QuoteResult> => {
         const path = `/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
         const res = await fetchWithTimeout(`${YF_DEV_PROXY}${path}`, {
@@ -141,6 +147,7 @@ export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
         return parseQuote(ticker, await res.json());
       }),
     );
+    return { quotes, updatedAt: null };
   }
 
   // Production: read from pre-fetched static JSON (same-origin, no CORS needed)
@@ -153,7 +160,10 @@ export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
   }
   const data: { updatedAt: string; quotes: QuoteResult[] } = await res.json();
   const tickerSet = new Set(tickers);
-  return data.quotes.filter((q) => tickerSet.has(q.ticker));
+  return {
+    quotes: data.quotes.filter((q) => tickerSet.has(q.ticker)),
+    updatedAt: data.updatedAt,
+  };
 }
 
 /**
