@@ -26,11 +26,30 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
   };
 
   return (
-    <div className="max-w-lg mx-auto">
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 space-y-6">
-        <div>
-          <h2 className="text-white font-semibold text-lg">Settings</h2>
-          <p className="text-slate-400 text-xs mt-0.5">Configure how PortfolioWatch behaves</p>
+    /* Backdrop – clicking outside the panel closes the overlay */
+    <div
+      className="fixed inset-0 z-40 bg-black/50"
+      onClick={onClose}
+    >
+      {/* Panel – positioned in the top-right corner, below the header */}
+      <div
+        className="absolute top-16 right-4 bg-slate-800 rounded-xl p-6 border border-slate-700 w-80 shadow-2xl space-y-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-white font-semibold text-lg">Settings</h2>
+            <p className="text-slate-400 text-xs mt-0.5">Configure how PortfolioWatch behaves</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white transition-colors ml-4 flex-shrink-0"
+            aria-label="Close settings"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         <div className="space-y-3">

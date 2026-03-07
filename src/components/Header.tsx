@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, i
         </div>
 
         <button
-          onClick={() => onNavigate('settings')}
+          onClick={() => onNavigate(page === 'settings' ? 'portfolio' : 'settings')}
           className={`p-2 rounded-lg transition-colors ${
             page === 'settings'
               ? 'bg-blue-600 text-white'
