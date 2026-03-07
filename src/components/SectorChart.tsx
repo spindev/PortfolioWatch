@@ -54,8 +54,9 @@ export const SectorChart: React.FC<SectorChartProps> = ({ holdings, lang, curren
   }, [holdings]);
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <BarChart data={sectorData} layout="vertical" margin={{ top: 5, right: 20, left: 80, bottom: 5 }}>
+    <div className="h-[220px] sm:h-[260px]">
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={sectorData} layout="vertical" margin={{ top: 5, right: 20, left: 4, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
         <XAxis
           type="number"
@@ -80,5 +81,6 @@ export const SectorChart: React.FC<SectorChartProps> = ({ holdings, lang, curren
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    </div>
   );
 };

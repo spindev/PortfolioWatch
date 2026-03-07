@@ -38,7 +38,8 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdings }) =>
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <div className="h-[220px] sm:h-[280px]">
+    <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <Pie
           data={data}
@@ -59,5 +60,6 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdings }) =>
         />
       </PieChart>
     </ResponsiveContainer>
+    </div>
   );
 };
