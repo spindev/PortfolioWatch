@@ -46,7 +46,7 @@ const CORS_PROXIES: Array<(url: string) => string> = [
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
 ];
 
-const FETCH_TIMEOUT_MS = 30000;
+const FETCH_TIMEOUT_MS = 10000;
 
 async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Response> {
   const controller = new AbortController();
@@ -60,9 +60,29 @@ async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Res
 }
 
 /**
+ * Resolves with the first Response that fulfils, or rejects with a combined
+ * error message once every attempt has failed.  This lets us race multiple
+ * CORS proxy calls in parallel and return as soon as the fastest one responds.
+ */
+function firstSuccess(promises: Promise<Response>[]): Promise<Response> {
+  if (promises.length === 0) return Promise.reject(new Error('No CORS proxies configured'));
+  return new Promise<Response>((resolve, reject) => {
+    let pending = promises.length;
+    const errors: string[] = [];
+    promises.forEach((p, i) => {
+      p.then(resolve).catch((err: unknown) => {
+        errors[i] = err instanceof Error ? err.message : String(err);
+        if (--pending === 0) reject(new Error(`All CORS proxies failed: ${errors.join('; ')}`));
+      });
+    });
+  });
+}
+
+/**
  * Fetch a Yahoo Finance path, routing through the Vite dev-proxy in
- * development or through a series of public CORS proxies in production.
- * Falls back to the next proxy when a network error or non-OK status occurs.
+ * development or racing all public CORS proxies in parallel in production.
+ * Using a direct fetch to query2.finance.yahoo.com is skipped in production
+ * because browsers always block it with a CORS error.
  */
 async function fetchYF(path: string, options?: RequestInit): Promise<Response> {
   if (import.meta.env.DEV) {
@@ -70,32 +90,17 @@ async function fetchYF(path: string, options?: RequestInit): Promise<Response> {
   }
 
   const directUrl = `${YF_DIRECT_BASE}${path}`;
-  let lastError: Error = new Error('No CORS proxy available');
 
-  // Try the direct Yahoo Finance URL first.  This succeeds when the browser
-  // permits cross-origin requests to the host (e.g. it has been added to the
-  // site's CSP connect-src whitelist or Yahoo Finance returns permissive CORS
-  // headers for the request).
-  try {
-    const res = await fetchWithTimeout(directUrl, options);
-    if (res.ok) return res;
-    lastError = new Error(`Direct fetch returned ${res.status}`);
-  } catch (err) {
-    lastError = err instanceof Error ? err : new Error(String(err));
-  }
-
-  // Fall back to CORS proxies when direct access is blocked.
-  for (const buildProxy of CORS_PROXIES) {
-    const proxyUrl = buildProxy(directUrl);
-    try {
-      const res = await fetchWithTimeout(proxyUrl, options);
-      if (res.ok) return res;
-      lastError = new Error(`Proxy returned ${res.status}: ${proxyUrl}`);
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-    }
-  }
-  throw lastError;
+  // Race all CORS proxies in parallel – use whichever responds first.
+  return firstSuccess(
+    CORS_PROXIES.map((buildProxy) => {
+      const proxyUrl = buildProxy(directUrl);
+      return fetchWithTimeout(proxyUrl, options).then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res;
+      });
+    }),
+  );
 }
 
 export interface QuoteResult {
