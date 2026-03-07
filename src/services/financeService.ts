@@ -33,11 +33,18 @@ export const DEMO_ETFS: DemoEtfDef[] = [
   },
 ];
 
+const YF_DIRECT_BASE = 'https://query2.finance.yahoo.com';
+
 // In development the vite proxy forwards /api/yf → https://query2.finance.yahoo.com
-// In production (GitHub Pages) requests go through a CORS proxy
-const YF_BASE = import.meta.env.DEV
-  ? '/api/yf'
-  : 'https://corsproxy.io/?https://query2.finance.yahoo.com';
+const YF_DEV_PROXY = '/api/yf';
+
+// Production CORS proxies tried in order.  The target URL is always
+// percent-encoded so that query-string delimiters (? &) in the Yahoo Finance
+// URL are not misinterpreted as proxy query parameters.
+const CORS_PROXIES: Array<(url: string) => string> = [
+  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+];
 
 const FETCH_TIMEOUT_MS = 10000;
 
@@ -50,6 +57,31 @@ async function fetchWithTimeout(url: string, options?: RequestInit): Promise<Res
   } finally {
     clearTimeout(id);
   }
+}
+
+/**
+ * Fetch a Yahoo Finance path, routing through the Vite dev-proxy in
+ * development or through a series of public CORS proxies in production.
+ * Falls back to the next proxy when a network error or non-OK status occurs.
+ */
+async function fetchYF(path: string, options?: RequestInit): Promise<Response> {
+  if (import.meta.env.DEV) {
+    return fetchWithTimeout(`${YF_DEV_PROXY}${path}`, options);
+  }
+
+  const directUrl = `${YF_DIRECT_BASE}${path}`;
+  let lastError: Error = new Error('No CORS proxy available');
+  for (const buildProxy of CORS_PROXIES) {
+    const proxyUrl = buildProxy(directUrl);
+    try {
+      const res = await fetchWithTimeout(proxyUrl, options);
+      if (res.ok) return res;
+      lastError = new Error(`Proxy returned ${res.status}: ${proxyUrl}`);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
+  }
+  throw lastError;
 }
 
 export interface QuoteResult {
@@ -80,11 +112,11 @@ interface YFChartResponse {
 export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
   // Use the chart endpoint to retrieve the latest close price for each ticker.
   // The v7/finance/quote endpoint returns 403 without authenticated sessions,
-  // while v8/finance/chart continues to work through the CORS proxy.
+  // while v8/finance/chart continues to work without authentication.
   const results = await Promise.all(
     tickers.map(async (ticker): Promise<QuoteResult> => {
-      const url = `${YF_BASE}/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
-      const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } });
+      const path = `/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+      const res = await fetchYF(path, { headers: { Accept: 'application/json' } });
       if (!res.ok) throw new Error(`Quote API error: ${res.status}`);
       const data: YFChartResponse = await res.json();
       const result = data.chart?.result?.[0];
@@ -103,8 +135,8 @@ export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
 }
 
 export async function fetchHistorical(ticker: string): Promise<HistoricalPoint[]> {
-  const url = `${YF_BASE}/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y`;
-  const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } });
+  const path = `/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y`;
+  const res = await fetchYF(path, { headers: { Accept: 'application/json' } });
   if (!res.ok) throw new Error(`Historical API error: ${res.status}`);
   const data: YFChartResponse = await res.json();
   const result = data.chart?.result?.[0];
