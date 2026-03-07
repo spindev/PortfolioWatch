@@ -36,6 +36,13 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Baked into the JS bundle at build time by Vite.
+          # Add this as a GitHub Actions repository secret:
+          #   Settings → Secrets and variables → Actions → New repository secret
+          #   Name: VITE_YF_PROXY_URL
+          #   Value: https://portfoliowatch-yf-proxy.<your-account>.workers.dev
+          VITE_YF_PROXY_URL: ${{ secrets.VITE_YF_PROXY_URL }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
