@@ -54,7 +54,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
           <div>
             <h2 className="text-gray-900 dark:text-white font-semibold text-lg">CSV-Import</h2>
             <p className="text-gray-500 dark:text-slate-400 text-xs mt-0.5">
-              Gefundene Transaktionen werden importiert
+              Bestehende Daten für die gefundenen ISINs werden ersetzt
             </p>
           </div>
           <button

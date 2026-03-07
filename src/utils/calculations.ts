@@ -44,3 +44,8 @@ export function formatPercent(value: number): string {
   const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(2)}%`;
 }
+
+/** Format a share count using German locale (comma as decimal separator) */
+export function formatShares(shares: number): string {
+  return shares.toLocaleString('de-DE', { maximumFractionDigits: 6 });
+}

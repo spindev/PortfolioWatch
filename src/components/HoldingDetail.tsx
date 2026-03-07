@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Holding, PurchaseLot } from '../types';
-import { formatCurrency, formatPercent, calculatePriceGainPercent } from '../utils/calculations';
+import { formatCurrency, formatPercent, calculatePriceGainPercent, formatShares } from '../utils/calculations';
 
 const CURRENCY = 'EUR';
 const LOCALE = 'de-DE';
@@ -158,7 +158,7 @@ const LotsTable: React.FC<{ holding: Holding }> = ({ holding }) => {
                   {new Date(lot.date).toLocaleDateString(LOCALE)}
                 </td>
                 <td className="text-right py-2.5 px-2 text-gray-700 dark:text-slate-300">
-                  {lot.shares}
+                  {formatShares(lot.shares)}
                 </td>
                 <td className="text-right py-2.5 px-2 text-gray-700 dark:text-slate-300">
                   {formatCurrency(lot.buyPrice, CURRENCY, LOCALE)}
@@ -226,7 +226,7 @@ const LotsCards: React.FC<{ holding: Holding }> = ({ holding }) => {
             <div className="grid grid-cols-4 gap-1 text-xs">
               <div>
                 <p className="text-gray-400 dark:text-slate-500 mb-0.5">Anteile</p>
-                <p className="text-gray-700 dark:text-slate-300 font-medium">{lot.shares}</p>
+                <p className="text-gray-700 dark:text-slate-300 font-medium">{formatShares(lot.shares)}</p>
               </div>
               <div>
                 <p className="text-gray-400 dark:text-slate-500 mb-0.5">Kaufkurs</p>
