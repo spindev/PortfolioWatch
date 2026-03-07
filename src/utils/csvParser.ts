@@ -7,12 +7,12 @@ export interface CsvLot extends PurchaseLot {
 }
 
 /**
- * Parse a broker CSV export with the following tab-separated columns
+ * Parse a broker CSV export with the following semicolon-separated columns
  * (an optional leading "Name" / "Bezeichnung" column is supported):
- *   [Name] | ISIN | WKN | Anzahl | Anzahl storniert | Status | Orderart | Limit | Stop |
- *   Erstellt Datum | Erstellt Zeit | Gültig bis | Richtung | Wert | Wert storniert |
- *   Mindermengenzuschlag | Ausführung Datum | Ausführung Zeit | Ausführung Kurs |
- *   Anzahl ausgeführt | Anzahl offen | Gestrichen Datum | Gestrichen Zeit
+ *   [Name] ; ISIN ; WKN ; Anzahl ; Anzahl storniert ; Status ; Orderart ; Limit ; Stop ;
+ *   Erstellt Datum ; Erstellt Zeit ; Gültig bis ; Richtung ; Wert ; Wert storniert ;
+ *   Mindermengenzuschlag ; Ausführung Datum ; Ausführung Zeit ; Ausführung Kurs ;
+ *   Anzahl ausgeführt ; Anzahl offen ; Gestrichen Datum ; Gestrichen Zeit
  *
  * Only rows where Richtung = "Kauf" are returned (Status is not checked).
  */
@@ -22,7 +22,7 @@ export function parseBrokerCsv(text: string): CsvLot[] {
   const lines = clean.trim().split('\n');
   if (lines.length < 2) return [];
 
-  const header = lines[0].split('\t').map((h) => h.trim());
+  const header = lines[0].split(';').map((h) => h.trim());
 
   const idx = (name: string): number => header.indexOf(name);
   const isinIdx = idx('ISIN');
@@ -43,7 +43,7 @@ export function parseBrokerCsv(text: string): CsvLot[] {
     const line = lines[i].trim();
     if (!line) continue;
 
-    const cols = line.split('\t').map((c) => c.trim());
+    const cols = line.split(';').map((c) => c.trim());
 
     // Only buy orders
     if (cols[richtungIdx] !== 'Kauf') continue;
