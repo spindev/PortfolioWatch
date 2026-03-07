@@ -1,23 +1,23 @@
 [
   {
     "id": "world",
-    "ticker": "URTH",
-    "name": "iShares MSCI World ETF",
-    "sector": "Global Equity",
+    "ticker": "EUNL.DE",
+    "name": "iShares Core MSCI World UCITS ETF",
+    "sector": "Globale Aktien",
     "shares": 100
   },
   {
     "id": "em",
-    "ticker": "EEM",
-    "name": "iShares MSCI Emerging Markets ETF",
-    "sector": "Emerging Markets",
+    "ticker": "EIMI.DE",
+    "name": "iShares Core MSCI EM IMI UCITS ETF",
+    "sector": "Schwellenländer",
     "shares": 100
   },
   {
-    "id": "esg",
-    "ticker": "LCEU.SW",
-    "name": "iShares MSCI Europe ESG Enhanced ETF",
-    "sector": "ESG Europe",
+    "id": "europe",
+    "ticker": "EXSA.DE",
+    "name": "iShares Core EURO STOXX 50 UCITS ETF",
+    "sector": "Eurozone Aktien",
     "shares": 100
   }
 ]

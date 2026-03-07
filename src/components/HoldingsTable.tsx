@@ -1,17 +1,17 @@
 import React from 'react';
-import { Holding, Language } from '../types';
+import { Holding } from '../types';
 import { calculateHoldingGain, calculateHoldingGainPercent, formatCurrency, formatPercent } from '../utils/calculations';
-import { t, getLocale } from '../i18n';
+
+const CURRENCY = 'EUR';
+const LOCALE = 'de-DE';
 
 interface HoldingsTableProps {
   holdings: Holding[];
   selectedTicker?: string | null;
   onSelect?: (ticker: string | null) => void;
-  lang: Language;
 }
 
-export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selectedTicker, onSelect, lang }) => {
-  const locale = getLocale(lang);
+export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selectedTicker, onSelect }) => {
   const totalValue = holdings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0);
 
   const handleRowClick = (ticker: string) => {
@@ -39,41 +39,41 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
                 onSelect ? 'cursor-pointer' : ''
               } ${
                 isSelected
-                  ? 'bg-blue-900/30 border-blue-700/50'
-                  : 'bg-slate-900/40 border-slate-700/50 hover:bg-slate-700/30'
+                  ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700/50'
+                  : 'bg-gray-50 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700/30'
               }`}
             >
               {/* Row 1: ticker + P&L % */}
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5 min-w-0">
                   {isSelected && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
                   )}
-                  <span className="font-semibold text-white text-sm">{holding.ticker}</span>
-                  <span className={`text-xs font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <span className="font-semibold text-gray-900 dark:text-white text-sm">{holding.ticker}</span>
+                  <span className={`text-xs font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatPercent(gainPct)}
                   </span>
                 </div>
-                <span className="text-slate-400 text-xs">{allocation.toFixed(1)}%</span>
+                <span className="text-gray-500 dark:text-slate-400 text-xs">{allocation.toFixed(1)}%</span>
               </div>
 
               {/* Row 2: full name */}
-              <p className="text-slate-400 text-xs truncate mb-2">{holding.name}</p>
+              <p className="text-gray-500 dark:text-slate-400 text-xs truncate mb-2">{holding.name}</p>
 
               {/* Row 3: current / value / gain */}
               <div className="grid grid-cols-3 gap-1 text-xs">
                 <div>
-                  <p className="text-slate-500 mb-0.5">{t('colCurrent', lang)}</p>
-                  <p className="text-slate-300 font-medium">{formatCurrency(holding.currentPrice, holding.currency, locale)}</p>
+                  <p className="text-gray-400 dark:text-slate-500 mb-0.5">Aktuell</p>
+                  <p className="text-gray-700 dark:text-slate-300 font-medium">{formatCurrency(holding.currentPrice, CURRENCY, LOCALE)}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500 mb-0.5">{t('colValue', lang)}</p>
-                  <p className="text-white font-medium">{formatCurrency(value, holding.currency, locale)}</p>
+                  <p className="text-gray-400 dark:text-slate-500 mb-0.5">Wert</p>
+                  <p className="text-gray-900 dark:text-white font-medium">{formatCurrency(value, CURRENCY, LOCALE)}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500 mb-0.5">{t('colPnl', lang)}</p>
-                  <p className={`font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {formatCurrency(gain, holding.currency, locale)}
+                  <p className="text-gray-400 dark:text-slate-500 mb-0.5">G/V</p>
+                  <p className={`font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {formatCurrency(gain, CURRENCY, LOCALE)}
                   </p>
                 </div>
               </div>
@@ -81,8 +81,8 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
           );
         })}
         {onSelect && (
-          <p className="text-slate-500 text-xs mt-2 text-center">
-            {t('clickRowToView', lang)}
+          <p className="text-gray-400 dark:text-slate-500 text-xs mt-2 text-center">
+            Zeile anklicken für Kursentwicklung
           </p>
         )}
       </div>
@@ -91,15 +91,15 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
       <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-slate-400 border-b border-slate-700">
-              <th className="text-left py-3 px-2">{t('colEtf', lang)}</th>
-              <th className="text-right py-3 px-2">{t('colShares', lang)}</th>
-              <th className="text-right py-3 px-2">{t('colAvgBuy', lang)}</th>
-              <th className="text-right py-3 px-2">{t('colCurrent', lang)}</th>
-              <th className="text-right py-3 px-2">{t('colValue', lang)}</th>
-              <th className="text-right py-3 px-2">{t('colPnl', lang)}</th>
-              <th className="text-right py-3 px-2">{t('colPnlPct', lang)}</th>
-              <th className="text-right py-3 px-2">{t('colAllocation', lang)}</th>
+            <tr className="text-gray-500 dark:text-slate-400 border-b border-gray-200 dark:border-slate-700">
+              <th className="text-left py-3 px-2">ETF</th>
+              <th className="text-right py-3 px-2">Anteile</th>
+              <th className="text-right py-3 px-2">Ø Kaufkurs</th>
+              <th className="text-right py-3 px-2">Aktuell</th>
+              <th className="text-right py-3 px-2">Wert</th>
+              <th className="text-right py-3 px-2">G/V</th>
+              <th className="text-right py-3 px-2">G/V %</th>
+              <th className="text-right py-3 px-2">Allokation</th>
             </tr>
           </thead>
           <tbody>
@@ -115,50 +115,50 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
                 <tr
                   key={holding.id}
                   onClick={() => handleRowClick(holding.ticker)}
-                  className={`border-b border-slate-700/50 transition-colors ${
+                  className={`border-b border-gray-100 dark:border-slate-700/50 transition-colors ${
                     onSelect ? 'cursor-pointer' : ''
                   } ${
                     isSelected
-                      ? 'bg-blue-900/30 border-blue-700/50'
-                      : 'hover:bg-slate-700/30'
+                      ? 'bg-blue-50 dark:bg-blue-900/30'
+                      : 'hover:bg-gray-50 dark:hover:bg-slate-700/30'
                   }`}
                 >
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-2">
                       {isSelected && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
                       )}
                       <div>
-                        <div className="font-semibold text-white">{holding.ticker}</div>
-                        <div className="text-slate-400 text-xs truncate max-w-[180px]">{holding.name}</div>
+                        <div className="font-semibold text-gray-900 dark:text-white">{holding.ticker}</div>
+                        <div className="text-gray-500 dark:text-slate-400 text-xs truncate max-w-[180px]">{holding.name}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="text-right py-3 px-2 text-slate-300">{holding.shares}</td>
-                  <td className="text-right py-3 px-2 text-slate-300">
-                    {formatCurrency(holding.avgBuyPrice, holding.currency, locale)}
+                  <td className="text-right py-3 px-2 text-gray-700 dark:text-slate-300">{holding.shares}</td>
+                  <td className="text-right py-3 px-2 text-gray-700 dark:text-slate-300">
+                    {formatCurrency(holding.avgBuyPrice, CURRENCY, LOCALE)}
                   </td>
-                  <td className="text-right py-3 px-2 text-slate-300">
-                    {formatCurrency(holding.currentPrice, holding.currency, locale)}
+                  <td className="text-right py-3 px-2 text-gray-700 dark:text-slate-300">
+                    {formatCurrency(holding.currentPrice, CURRENCY, LOCALE)}
                   </td>
-                  <td className="text-right py-3 px-2 font-medium text-white">
-                    {formatCurrency(value, holding.currency, locale)}
+                  <td className="text-right py-3 px-2 font-medium text-gray-900 dark:text-white">
+                    {formatCurrency(value, CURRENCY, LOCALE)}
                   </td>
-                  <td className={`text-right py-3 px-2 font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {formatCurrency(gain, holding.currency, locale)}
+                  <td className={`text-right py-3 px-2 font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {formatCurrency(gain, CURRENCY, LOCALE)}
                   </td>
-                  <td className={`text-right py-3 px-2 font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <td className={`text-right py-3 px-2 font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                     {formatPercent(gainPct)}
                   </td>
                   <td className="text-right py-3 px-2">
                     <div className="flex items-center justify-end gap-2">
-                      <div className="w-16 bg-slate-700 rounded-full h-1.5">
+                      <div className="w-16 bg-gray-200 dark:bg-slate-700 rounded-full h-1.5">
                         <div
                           className="bg-blue-500 h-1.5 rounded-full"
                           style={{ width: `${allocation}%` }}
                         />
                       </div>
-                      <span className="text-slate-300 text-xs w-10 text-right">
+                      <span className="text-gray-700 dark:text-slate-300 text-xs w-10 text-right">
                         {allocation.toFixed(1)}%
                       </span>
                     </div>
@@ -169,8 +169,8 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
           </tbody>
         </table>
         {onSelect && (
-          <p className="text-slate-500 text-xs mt-3 text-center">
-            {t('clickRowToView', lang)}
+          <p className="text-gray-400 dark:text-slate-500 text-xs mt-3 text-center">
+            Zeile anklicken für Kursentwicklung
           </p>
         )}
       </div>

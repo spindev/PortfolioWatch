@@ -19,13 +19,27 @@ interface AllocationChartProps {
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm">
-        <p className="text-white font-medium">{payload[0].name}</p>
-        <p className="text-blue-400">{payload[0].value.toFixed(1)}%</p>
+      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg p-3 text-sm shadow-lg">
+        <p className="text-gray-900 dark:text-white font-medium">{payload[0].payload.fullName}</p>
+        <p className="text-blue-600 dark:text-blue-400 font-semibold">{payload[0].value.toFixed(1)}%</p>
       </div>
     );
   }
   return null;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  if (percent < 0.05) return null;
+  return (
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={600}>
+      {`${(percent * 100).toFixed(1)}%`}
+    </text>
+  );
 };
 
 export const AllocationChart: React.FC<AllocationChartProps> = ({ holdings }) => {
@@ -49,6 +63,8 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdings }) =>
           outerRadius={100}
           paddingAngle={3}
           dataKey="value"
+          labelLine={false}
+          label={<CustomLabel />}
         >
           {data.map((_, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
