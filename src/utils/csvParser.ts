@@ -1,9 +1,11 @@
-import { PurchaseLot } from '../types';
+import { PurchaseLot, SaleLot } from '../types';
 
-/** One executed buy order parsed from a broker CSV row */
+/** One executed transaction (buy or sell) parsed from a broker CSV row */
 export interface CsvLot extends PurchaseLot {
   isin: string;
   wkn: string;
+  /** 'buy' for Kauf, 'sell' for Verkauf */
+  type: 'buy' | 'sell';
 }
 
 /**
@@ -14,7 +16,7 @@ export interface CsvLot extends PurchaseLot {
  *   Mindermengenzuschlag ; Ausführung Datum ; Ausführung Zeit ; Ausführung Kurs ;
  *   Anzahl ausgeführt ; Anzahl offen ; Gestrichen Datum ; Gestrichen Zeit
  *
- * Only rows where Richtung = "Kauf" are returned (Status is not checked).
+ * Both Kauf (buy) and Verkauf (sell) rows are returned.
  */
 export function parseBrokerCsv(text: string): CsvLot[] {
   // Strip UTF-8 BOM and normalise line endings
@@ -45,8 +47,10 @@ export function parseBrokerCsv(text: string): CsvLot[] {
 
     const cols = line.split(';').map((c) => c.trim());
 
-    // Only buy orders
-    if (cols[richtungIdx] !== 'Kauf') continue;
+    // Accept both buy (Kauf) and sell (Verkauf) orders
+    const richtung = cols[richtungIdx];
+    if (richtung !== 'Kauf' && richtung !== 'Verkauf') continue;
+    const type: 'buy' | 'sell' = richtung === 'Kauf' ? 'buy' : 'sell';
 
     const isin = cols[isinIdx] ?? '';
     const wkn = wknIdx !== -1 ? (cols[wknIdx] ?? '') : '';
@@ -72,30 +76,51 @@ export function parseBrokerCsv(text: string): CsvLot[] {
 
     if (!isFinite(price) || price <= 0 || !isFinite(shares) || shares <= 0) continue;
 
-    result.push({ isin, wkn, date, shares, buyPrice: price });
+    result.push({ isin, wkn, date, shares, buyPrice: price, type });
   }
 
   return result;
 }
 
-/** Group CsvLots by ISIN, returning unique ISIN entries with their lots */
+/** Group CsvLots by ISIN, separating buys and sells */
 export function groupCsvLotsByIsin(lots: CsvLot[]): {
   isin: string;
   wkn: string;
   lots: CsvLot[];
-  totalShares: number;
+  saleLots: CsvLot[];
+  totalBuyShares: number;
+  totalSellShares: number;
 }[] {
-  const map = new Map<string, { isin: string; wkn: string; lots: CsvLot[] }>();
+  const map = new Map<
+    string,
+    { isin: string; wkn: string; lots: CsvLot[]; saleLots: CsvLot[] }
+  >();
 
   for (const lot of lots) {
     if (!map.has(lot.isin)) {
-      map.set(lot.isin, { isin: lot.isin, wkn: lot.wkn, lots: [] });
+      map.set(lot.isin, { isin: lot.isin, wkn: lot.wkn, lots: [], saleLots: [] });
     }
-    map.get(lot.isin)!.lots.push(lot);
+    const entry = map.get(lot.isin)!;
+    if (lot.type === 'sell') {
+      entry.saleLots.push(lot);
+    } else {
+      entry.lots.push(lot);
+    }
   }
 
   return Array.from(map.values()).map((g) => ({
     ...g,
-    totalShares: g.lots.reduce((s, l) => s + l.shares, 0),
+    totalBuyShares: g.lots.reduce((s, l) => s + l.shares, 0),
+    totalSellShares: g.saleLots.reduce((s, l) => s + l.shares, 0),
   }));
+}
+
+/** Convert buy CsvLots to PurchaseLot array (strips CSV-specific fields) */
+export function csvLotsToPurchaseLots(lots: CsvLot[]): PurchaseLot[] {
+  return lots.map(({ date, shares, buyPrice }) => ({ date, shares, buyPrice }));
+}
+
+/** Convert sell CsvLots to SaleLot array */
+export function csvLotsToSaleLots(lots: CsvLot[]): SaleLot[] {
+  return lots.map(({ date, shares }) => ({ date, shares }));
 }

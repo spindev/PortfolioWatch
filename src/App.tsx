@@ -12,9 +12,10 @@ import {
   buildHoldings,
   buildPortfolioHistory,
   type HistoricalPoint,
+  type TickerTransactions,
 } from './services/financeService';
 import { getSettings, saveSettings } from './services/settingsService';
-import { getImportedLots, saveImportedLots } from './services/importedLotsService';
+import { getImportedLots, saveImportedLots, getImportedSales, saveImportedSales } from './services/importedLotsService';
 import { parseBrokerCsv } from './utils/csvParser';
 import {
   calculateTotalValue,
@@ -24,7 +25,7 @@ import {
   formatCurrency,
   formatPercent,
 } from './utils/calculations';
-import { Holding, PortfolioSnapshot, PurchaseLot, Settings } from './types';
+import { Holding, PortfolioSnapshot, PurchaseLot, SaleLot, Settings } from './types';
 
 const CURRENCY = 'EUR';
 const LOCALE = 'de-DE';
@@ -48,6 +49,7 @@ function App() {
 
   // CSV import state
   const importedLotsRef = useRef<Record<string, PurchaseLot[]>>(getImportedLots());
+  const importedSalesRef = useRef<Record<string, SaleLot[]>>(getImportedSales());
   const [csvImportLots, setCsvImportLots] = useState<import('./utils/csvParser').CsvLot[] | null>(null);
 
   const isDark = settings.theme === 'dark';
@@ -83,7 +85,20 @@ function App() {
       const quotes = await fetchQuotes(tickers);
 
       // Build state — merge in any CSV-imported lots from the ref
-      const newHoldings = buildHoldings(DEMO_ETFS, quotes, avgBuyPrices, rawHistories, importedLotsRef.current);
+      const newHoldings = buildHoldings(DEMO_ETFS, quotes, avgBuyPrices, rawHistories, importedLotsRef.current, importedSalesRef.current);
+
+      // Build time-aware transaction history per ticker for the portfolio chart
+      const transactionsByTicker: Record<string, TickerTransactions> = {};
+      DEMO_ETFS.forEach((def) => {
+        const staticLots = (def.lots ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
+        const csvBuyLots = def.isin ? (importedLotsRef.current[def.isin] ?? []) : [];
+        const csvSaleLots = def.isin ? (importedSalesRef.current[def.isin] ?? []) : [];
+        const allBuyLots = [...staticLots, ...csvBuyLots].sort((a, b) => a.date.localeCompare(b.date));
+        const allSaleLots = [...csvSaleLots].sort((a, b) => a.date.localeCompare(b.date));
+        if (allBuyLots.length > 0 || allSaleLots.length > 0) {
+          transactionsByTicker[def.ticker] = { buyLots: allBuyLots, saleLots: allSaleLots };
+        }
+      });
 
       // Derive per-ticker shares and actual cost basis from the computed holdings
       // so the portfolio chart reflects real imported data, not the static config.
@@ -94,7 +109,7 @@ function App() {
         costBasisByTicker[h.ticker] = h.avgBuyPrice;
       });
 
-      const newPortfolioHistory = buildPortfolioHistory(rawHistories, DEMO_ETFS, avgBuyPrices, sharesByTicker, costBasisByTicker);
+      const newPortfolioHistory = buildPortfolioHistory(rawHistories, DEMO_ETFS, avgBuyPrices, sharesByTicker, costBasisByTicker, transactionsByTicker);
 
       setHoldings(newHoldings);
       setPortfolioHistory(newPortfolioHistory);
@@ -147,18 +162,33 @@ function App() {
   };
 
   /** Called when the user confirms their ISIN selection in the modal */
-  const handleImportConfirm = (selectedByIsin: Record<string, PurchaseLot[]>) => {
-    const merged: Record<string, PurchaseLot[]> = { ...importedLotsRef.current };
+  const handleImportConfirm = (selectedByIsin: Record<string, PurchaseLot[]>, salesByIsin: Record<string, SaleLot[]>) => {
+    // Merge buy lots
+    const mergedLots: Record<string, PurchaseLot[]> = { ...importedLotsRef.current };
     Object.entries(selectedByIsin).forEach(([isin, newLots]) => {
-      const existing = merged[isin] ?? [];
+      const existing = mergedLots[isin] ?? [];
       // Deduplicate: skip lots that already exist (same date, shares, buyPrice)
       const isoDuplicate = (a: PurchaseLot, b: PurchaseLot) =>
         a.date === b.date && a.shares === b.shares && a.buyPrice === b.buyPrice;
       const unique = newLots.filter((nl) => !existing.some((el) => isoDuplicate(el, nl)));
-      merged[isin] = [...existing, ...unique];
+      mergedLots[isin] = [...existing, ...unique];
     });
-    importedLotsRef.current = merged;
-    saveImportedLots(merged);
+    importedLotsRef.current = mergedLots;
+    saveImportedLots(mergedLots);
+
+    // Merge sell lots
+    const mergedSales: Record<string, SaleLot[]> = { ...importedSalesRef.current };
+    Object.entries(salesByIsin).forEach(([isin, newSales]) => {
+      const existing = mergedSales[isin] ?? [];
+      // Deduplicate: skip sales that already exist (same date, shares)
+      const isoDuplicate = (a: SaleLot, b: SaleLot) =>
+        a.date === b.date && a.shares === b.shares;
+      const unique = newSales.filter((ns) => !existing.some((es) => isoDuplicate(es, ns)));
+      mergedSales[isin] = [...existing, ...unique];
+    });
+    importedSalesRef.current = mergedSales;
+    saveImportedSales(mergedSales);
+
     setCsvImportLots(null);
     loadInitialData();
   };
