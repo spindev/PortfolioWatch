@@ -1,7 +1,7 @@
 [
   {
     "id": "world",
-    "ticker": "EUNL.DE",
+    "ticker": "EUNL.MU",
     "isin": "IE00B4L5Y983",
     "wkn": "A0RPWH",
     "name": "iShares Core MSCI World UCITS ETF",
@@ -11,7 +11,7 @@
   },
   {
     "id": "em",
-    "ticker": "IS3N.DE",
+    "ticker": "IS3N.MU",
     "isin": "IE00BKM4GZ66",
     "wkn": "A111X9",
     "name": "iShares Core MSCI EM IMI UCITS ETF",
@@ -21,7 +21,7 @@
   },
   {
     "id": "europe",
-    "ticker": "EXSA.DE",
+    "ticker": "EXSA.MU",
     "isin": "DE0005933956",
     "wkn": "593395",
     "name": "iShares Core EURO STOXX 50 UCITS ETF",
@@ -31,7 +31,7 @@
   },
   {
     "id": "world-sri",
-    "ticker": "SEAC.DE",
+    "ticker": "SEAC.MU",
     "isin": "LU0950674332",
     "wkn": "A1W3CQ",
     "name": "UBS MSCI World Socially Responsible UCITS ETF",
@@ -41,7 +41,7 @@
   },
   {
     "id": "emu-esg",
-    "ticker": "EMNE.DE",
+    "ticker": "EMNE.MU",
     "isin": "IE00BHZPHZ28",
     "wkn": "A2PDNS",
     "name": "iShares MSCI EMU ESG Enhanced UCITS ETF",
@@ -51,7 +51,7 @@
   },
   {
     "id": "em-xtrackers",
-    "ticker": "XMME.DE",
+    "ticker": "XMME.MU",
     "isin": "IE00BTJRMP35",
     "wkn": "A12GVR",
     "name": "Xtrackers MSCI Emerging Markets UCITS ETF",
