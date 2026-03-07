@@ -1,7 +1,7 @@
 import { Holding, PortfolioSnapshot, PurchaseLot } from '../types';
 import etfsConfig from '../etfs.json';
 
-// Demo portfolio: 3 ETFs, 100 shares each
+// ETF definitions — the single source of truth shared with scripts/fetch-finance-data.mjs.
 export interface DemoEtfDef {
   id: string;
   ticker: string;
@@ -168,17 +168,29 @@ export function buildEtfHistory(
   }));
 }
 
-/** Combine per-ETF histories into a single portfolio history using common dates */
+/** Combine per-ETF histories into a single portfolio history using common dates.
+ *
+ * @param sharesByTicker   Actual share count per ticker (computed from holdings/lots).
+ *                         Falls back to def.shares when not provided.
+ * @param costBasisByTicker Actual average buy price per ticker (from holdings).
+ *                         Falls back to avgBuyPrices (first historical close) when not provided.
+ */
 export function buildPortfolioHistory(
   etfHistories: Record<string, HistoricalPoint[]>,
   etfDefs: DemoEtfDef[],
   avgBuyPrices: Record<string, number>,
+  sharesByTicker: Record<string, number> = {},
+  costBasisByTicker: Record<string, number> = {},
 ): PortfolioSnapshot[] {
-  if (etfDefs.length === 0) return [];
+  // Only include ETFs that have a non-zero share count
+  const activeDefs = etfDefs.filter(
+    (def) => (sharesByTicker[def.ticker] ?? def.shares) > 0,
+  );
+  if (activeDefs.length === 0) return [];
 
   // Build price-lookup maps
   const priceMaps: Record<string, Record<string, number>> = {};
-  etfDefs.forEach((def) => {
+  activeDefs.forEach((def) => {
     priceMaps[def.ticker] = {};
     (etfHistories[def.ticker] ?? []).forEach((p) => {
       priceMaps[def.ticker][p.date] = p.close;
@@ -187,7 +199,7 @@ export function buildPortfolioHistory(
 
   // Only consider ETFs that have historical data; skip those with empty history
   // so that a single failed ticker doesn't blank out the whole chart.
-  const etfsWithData = etfDefs.filter((def) => (etfHistories[def.ticker] ?? []).length > 0);
+  const etfsWithData = activeDefs.filter((def) => (etfHistories[def.ticker] ?? []).length > 0);
   if (etfsWithData.length === 0) return [];
 
   // Use dates where every ETF *with data* has a data point
@@ -200,11 +212,14 @@ export function buildPortfolioHistory(
   return commonDates.map((date) => {
     let totalValue = 0;
     let totalCost = 0;
-    etfDefs.forEach((def) => {
-      // Fall back to avg buy price for ETFs whose history failed to load
-      const price = priceMaps[def.ticker][date] ?? avgBuyPrices[def.ticker] ?? 0;
-      totalValue += def.shares * price;
-      totalCost += def.shares * (avgBuyPrices[def.ticker] ?? price);
+    activeDefs.forEach((def) => {
+      const shares = sharesByTicker[def.ticker] ?? def.shares;
+      const costBasis = costBasisByTicker[def.ticker] ?? avgBuyPrices[def.ticker] ?? 0;
+      // Fall back to cost basis (or historical avg) when the price map has no entry for this date
+      const priceFallback = costBasis > 0 ? costBasis : (avgBuyPrices[def.ticker] ?? 0);
+      const price = priceMaps[def.ticker]?.[date] ?? priceFallback;
+      totalValue += shares * price;
+      totalCost += shares * costBasis;
     });
     return {
       date,
