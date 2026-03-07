@@ -9,28 +9,40 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { Holding } from '../types';
+import { Holding, Language } from '../types';
+import { getLocale, getCurrencySymbol } from '../i18n';
+import { formatCurrency } from '../utils/calculations';
 
 interface SectorChartProps {
   holdings: Holding[];
+  lang: Language;
+  currency: string;
 }
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({
+  active, payload, currency, locale,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  active?: any; payload?: any[];
+  currency: string; locale: string;
+}) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm">
         <p className="text-white font-medium">{payload[0].payload.sector}</p>
-        <p className="text-blue-400">€{payload[0].value?.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</p>
+        <p className="text-blue-400">{formatCurrency(payload[0].value, currency, locale)}</p>
       </div>
     );
   }
   return null;
 };
 
-export const SectorChart: React.FC<SectorChartProps> = ({ holdings }) => {
+export const SectorChart: React.FC<SectorChartProps> = ({ holdings, lang, currency }) => {
+  const locale = getLocale(lang);
+  const symbol = getCurrencySymbol(currency);
+
   const sectorData = React.useMemo(() => {
     const map: Record<string, number> = {};
     holdings.forEach((h) => {
@@ -50,7 +62,7 @@ export const SectorChart: React.FC<SectorChartProps> = ({ holdings }) => {
           tick={{ fill: '#94a3b8', fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(val) => `€${(val / 1000).toFixed(1)}k`}
+          tickFormatter={(val) => `${symbol}${(val / 1000).toFixed(1)}k`}
         />
         <YAxis
           dataKey="sector"
@@ -60,7 +72,7 @@ export const SectorChart: React.FC<SectorChartProps> = ({ holdings }) => {
           axisLine={false}
           width={80}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip currency={currency} locale={locale} />} />
         <Bar dataKey="value" radius={[0, 4, 4, 0]}>
           {sectorData.map((_, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

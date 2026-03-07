@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Settings } from '../types';
+import { Settings, Language, Currency } from '../types';
+import { t } from '../i18n';
 
 interface SettingsPageProps {
   settings: Settings;
@@ -7,17 +8,13 @@ interface SettingsPageProps {
   onClose: () => void;
 }
 
-const MIN_INTERVAL = 5;
-const MAX_INTERVAL = 60;
-
 export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, onClose }) => {
-  const [refreshInterval, setRefreshInterval] = useState(
-    Math.min(MAX_INTERVAL, Math.max(MIN_INTERVAL, settings.refreshInterval))
-  );
+  const [language, setLanguage] = useState<Language>(settings.language);
+  const [currency, setCurrency] = useState<Currency>(settings.currency);
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
-    onSave({ ...settings, refreshInterval });
+    onSave({ language, currency });
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
@@ -38,13 +35,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
       >
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-white font-semibold text-lg">Settings</h2>
-            <p className="text-slate-400 text-xs mt-0.5">Configure how PortfolioWatch behaves</p>
+            <h2 className="text-white font-semibold text-lg">{t('settingsTitle', language)}</h2>
+            <p className="text-slate-400 text-xs mt-0.5">{t('settingsSubtitle', language)}</p>
           </div>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white transition-colors ml-4 flex-shrink-0"
-            aria-label="Close settings"
+            aria-label={t('settings', language)}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -52,34 +49,43 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
           </button>
         </div>
 
-        <div className="space-y-3">
-          <label className="block text-slate-300 text-sm font-medium">
-            Auto-refresh interval
-          </label>
-          <p className="text-slate-400 text-xs">
-            How often live prices are fetched from Yahoo Finance (5 – 60 seconds).
-          </p>
-
-          {/* Slider + selected value */}
-          <div className="flex items-center gap-4">
-            <input
-              type="range"
-              min={MIN_INTERVAL}
-              max={MAX_INTERVAL}
-              step={5}
-              value={refreshInterval}
-              onChange={(e) => setRefreshInterval(Number(e.target.value))}
-              className="flex-1 accent-blue-500"
-            />
-            <span className="text-white text-sm font-medium w-10 text-right">
-              {refreshInterval}s
-            </span>
+        {/* Language */}
+        <div className="space-y-2">
+          <p className="text-slate-300 text-sm font-medium">{t('languageLabel', language)}</p>
+          <div className="flex gap-2">
+            {(['de', 'en'] as Language[]).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLanguage(l)}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                  language === l
+                    ? 'bg-blue-600 border-blue-500 text-white'
+                    : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                {l === 'de' ? t('langDe', language) : t('langEn', language)}
+              </button>
+            ))}
           </div>
-          <div className="flex justify-between text-slate-500 text-xs">
-            <span>5s</span>
-            <span>20s</span>
-            <span>40s</span>
-            <span>60s</span>
+        </div>
+
+        {/* Currency */}
+        <div className="space-y-2">
+          <p className="text-slate-300 text-sm font-medium">{t('currencyLabel', language)}</p>
+          <div className="flex gap-2">
+            {(['EUR', 'USD'] as Currency[]).map((c) => (
+              <button
+                key={c}
+                onClick={() => setCurrency(c)}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                  currency === c
+                    ? 'bg-blue-600 border-blue-500 text-white'
+                    : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                {c === 'EUR' ? t('currEur', language) : t('currUsd', language)}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -88,21 +94,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
             onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            Save Settings
+            {t('save', language)}
           </button>
           {saved && (
-            <span className="text-emerald-400 text-sm">✓ Saved</span>
+            <span className="text-emerald-400 text-sm">{t('savedConfirm', language)}</span>
           )}
         </div>
 
         <div className="border-t border-slate-700 pt-4 space-y-2">
-          <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">Demo Portfolio</p>
-          <p className="text-slate-400 text-xs">
-            World (URTH) · EM (EEM) · ESG Europe (LCEU.SW) — 100 shares each
-          </p>
-          <p className="text-slate-400 text-xs">
-            Prices fetched from Yahoo Finance · Buy price = price 1 year ago
-          </p>
+          <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">{t('demoPortfolio', language)}</p>
+          <p className="text-slate-400 text-xs">{t('demoPortfolioDesc', language)}</p>
+          <p className="text-slate-400 text-xs">{t('demoPortfolioPrices', language)}</p>
         </div>
       </div>
     </div>

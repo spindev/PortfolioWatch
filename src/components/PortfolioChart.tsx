@@ -9,14 +9,24 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { PortfolioSnapshot } from '../types';
+import { Language } from '../types';
+import { t, getLocale, getCurrencySymbol } from '../i18n';
+import { formatCurrency } from '../utils/calculations';
 
 interface PortfolioChartProps {
   data: PortfolioSnapshot[];
   timeRange: '1M' | '3M' | '6M' | '1Y' | 'ALL';
+  lang: Language;
+  currency: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({
+  active, payload, label, lang, currency, locale,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  active?: any; payload?: any[]; label?: string;
+  lang: Language; currency: string; locale: string;
+}) => {
   if (active && payload && payload.length) {
     const value = payload[0]?.value;
     const cost = payload[1]?.value;
@@ -25,10 +35,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <div className="bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm">
         <p className="text-slate-300 mb-1">{label}</p>
-        <p className="text-blue-400">Value: €{value?.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</p>
-        <p className="text-slate-400">Cost: €{cost?.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</p>
+        <p className="text-blue-400">{t('tooltipValue', lang)}: {formatCurrency(value, currency, locale)}</p>
+        <p className="text-slate-400">{t('tooltipCost', lang)}: {formatCurrency(cost, currency, locale)}</p>
         <p className={gain >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-          P&L: {gain >= 0 ? '+' : ''}€{gain?.toFixed(2)} ({gain >= 0 ? '+' : ''}{gainPct}%)
+          {t('tooltipPnl', lang)}: {gain >= 0 ? '+' : ''}{formatCurrency(gain, currency, locale)} ({gain >= 0 ? '+' : ''}{gainPct}%)
         </p>
       </div>
     );
@@ -36,7 +46,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange }) => {
+export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange, lang, currency }) => {
+  const locale = getLocale(lang);
+  const symbol = getCurrencySymbol(currency);
+
   const filtered = React.useMemo(() => {
     const days = timeRange === '1M' ? 30 : timeRange === '3M' ? 90 : timeRange === '6M' ? 180 : timeRange === '1Y' ? 365 : data.length;
     return data.slice(-days);
@@ -73,10 +86,10 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange 
           tick={{ fill: '#94a3b8', fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(val) => `€${(val / 1000).toFixed(1)}k`}
+          tickFormatter={(val) => `${symbol}${(val / 1000).toFixed(1)}k`}
           domain={['auto', 'auto']}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip lang={lang} currency={currency} locale={locale} />} />
         <Area
           type="monotone"
           dataKey="totalCost"
@@ -84,7 +97,7 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange 
           strokeWidth={1.5}
           strokeDasharray="4 4"
           fill="url(#costGradient)"
-          name="Cost Basis"
+          name={t('costBasis', lang)}
         />
         <Area
           type="monotone"
@@ -92,7 +105,7 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange 
           stroke="#3b82f6"
           strokeWidth={2}
           fill="url(#valueGradient)"
-          name="Portfolio Value"
+          name={t('portfolioValueLabel', lang)}
         />
       </AreaChart>
     </ResponsiveContainer>

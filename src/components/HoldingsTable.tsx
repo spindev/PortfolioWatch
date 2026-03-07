@@ -1,14 +1,17 @@
 import React from 'react';
-import { Holding } from '../types';
+import { Holding, Language } from '../types';
 import { calculateHoldingGain, calculateHoldingGainPercent, formatCurrency, formatPercent } from '../utils/calculations';
+import { t, getLocale } from '../i18n';
 
 interface HoldingsTableProps {
   holdings: Holding[];
   selectedTicker?: string | null;
   onSelect?: (ticker: string | null) => void;
+  lang: Language;
 }
 
-export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selectedTicker, onSelect }) => {
+export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selectedTicker, onSelect, lang }) => {
+  const locale = getLocale(lang);
   const totalValue = holdings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0);
 
   const handleRowClick = (ticker: string) => {
@@ -21,14 +24,14 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
       <table className="w-full text-sm">
         <thead>
           <tr className="text-slate-400 border-b border-slate-700">
-            <th className="text-left py-3 px-2">ETF</th>
-            <th className="text-right py-3 px-2">Shares</th>
-            <th className="text-right py-3 px-2">Avg. Buy</th>
-            <th className="text-right py-3 px-2">Current</th>
-            <th className="text-right py-3 px-2">Value</th>
-            <th className="text-right py-3 px-2">P&amp;L</th>
-            <th className="text-right py-3 px-2">P&amp;L %</th>
-            <th className="text-right py-3 px-2">Allocation</th>
+            <th className="text-left py-3 px-2">{t('colEtf', lang)}</th>
+            <th className="text-right py-3 px-2">{t('colShares', lang)}</th>
+            <th className="text-right py-3 px-2">{t('colAvgBuy', lang)}</th>
+            <th className="text-right py-3 px-2">{t('colCurrent', lang)}</th>
+            <th className="text-right py-3 px-2">{t('colValue', lang)}</th>
+            <th className="text-right py-3 px-2">{t('colPnl', lang)}</th>
+            <th className="text-right py-3 px-2">{t('colPnlPct', lang)}</th>
+            <th className="text-right py-3 px-2">{t('colAllocation', lang)}</th>
           </tr>
         </thead>
         <tbody>
@@ -65,16 +68,16 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
                 </td>
                 <td className="text-right py-3 px-2 text-slate-300">{holding.shares}</td>
                 <td className="text-right py-3 px-2 text-slate-300">
-                  {formatCurrency(holding.avgBuyPrice, holding.currency)}
+                  {formatCurrency(holding.avgBuyPrice, holding.currency, locale)}
                 </td>
                 <td className="text-right py-3 px-2 text-slate-300">
-                  {formatCurrency(holding.currentPrice, holding.currency)}
+                  {formatCurrency(holding.currentPrice, holding.currency, locale)}
                 </td>
                 <td className="text-right py-3 px-2 font-medium text-white">
-                  {formatCurrency(value, holding.currency)}
+                  {formatCurrency(value, holding.currency, locale)}
                 </td>
                 <td className={`text-right py-3 px-2 font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {formatCurrency(gain, holding.currency)}
+                  {formatCurrency(gain, holding.currency, locale)}
                 </td>
                 <td className={`text-right py-3 px-2 font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
                   {formatPercent(gainPct)}
@@ -99,7 +102,7 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, selected
       </table>
       {onSelect && (
         <p className="text-slate-500 text-xs mt-3 text-center">
-          Click a row to view its price development
+          {t('clickRowToView', lang)}
         </p>
       )}
     </div>

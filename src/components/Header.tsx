@@ -1,4 +1,6 @@
 import React from 'react';
+import { Language } from '../types';
+import { t, getLocale } from '../i18n';
 
 interface HeaderProps {
   page: 'portfolio' | 'settings';
@@ -6,16 +8,19 @@ interface HeaderProps {
   lastUpdated: Date | null;
   isLoading: boolean;
   hasError: boolean;
+  lang: Language;
 }
 
-export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, isLoading, hasError }) => {
+export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, isLoading, hasError, lang }) => {
+  const locale = getLocale(lang);
+
   return (
     <header className="bg-slate-900 border-b border-slate-700 px-6 py-4 sticky top-0 z-10">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <button
           onClick={() => onNavigate('portfolio')}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity focus:outline-none"
-          aria-label="Go to portfolio"
+          aria-label={t('goToPortfolio', lang)}
         >
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -24,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, i
           </div>
           <div className="text-left">
             <h1 className="text-white font-bold text-lg leading-tight">PortfolioWatch</h1>
-            <p className="text-slate-400 text-xs">ETF Portfolio Tracker</p>
+            <p className="text-slate-400 text-xs">{t('etfPortfolioTracker', lang)}</p>
           </div>
         </button>
 
@@ -33,11 +38,11 @@ export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, i
             <span className="inline-block w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
           )}
           {hasError ? (
-            <span className="text-red-400">Price fetch error</span>
+            <span className="text-red-400">{t('priceFetchError', lang)}</span>
           ) : lastUpdated ? (
-            <span>Updated: {lastUpdated.toLocaleTimeString('de-DE')}</span>
+            <span>{t('updated', lang)} {lastUpdated.toLocaleTimeString(locale)}</span>
           ) : (
-            <span>Loading…</span>
+            <span>{t('loading', lang)}</span>
           )}
         </div>
 
@@ -48,8 +53,8 @@ export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, i
               ? 'bg-blue-600 text-white'
               : 'text-slate-400 hover:text-white hover:bg-slate-700'
           }`}
-          aria-label="Settings"
-          title="Settings"
+          aria-label={t('settings', lang)}
+          title={t('settings', lang)}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
