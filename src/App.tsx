@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { StatCard } from './components/StatCard';
 import { PortfolioChart } from './components/PortfolioChart';
@@ -24,6 +24,7 @@ import {
   formatPercent,
 } from './utils/calculations';
 import { Holding, PortfolioSnapshot, Settings } from './types';
+import { t, getLocale } from './i18n';
 
 type TimeRange = '1M' | '3M' | '6M' | '1Y' | 'ALL';
 type Page = 'portfolio' | 'settings';
@@ -44,8 +45,9 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Keep avgBuyPrices stable across refreshes
-  const avgBuyPricesRef = useRef<Record<string, number>>({});
+  const lang = settings.language;
+  const currency = settings.currency;
+  const locale = getLocale(lang);
 
   /** One-time load: fetch 1-year history + first set of prices */
   const loadInitialData = useCallback(async () => {
@@ -56,10 +58,10 @@ function App() {
 
       // Fetch historical data for all ETFs in parallel
       const historicalResults = await Promise.all(
-        tickers.map((t) => fetchHistorical(t).catch(() => [] as HistoricalPoint[]))
+        tickers.map((ticker) => fetchHistorical(ticker).catch(() => [] as HistoricalPoint[]))
       );
       const rawHistories: Record<string, HistoricalPoint[]> = {};
-      tickers.forEach((t, i) => { rawHistories[t] = historicalResults[i]; });
+      tickers.forEach((ticker, i) => { rawHistories[ticker] = historicalResults[i]; });
 
       // Use the first historical close price as the avg buy price
       const avgBuyPrices: Record<string, number> = {};
@@ -67,7 +69,6 @@ function App() {
         const history = rawHistories[def.ticker];
         avgBuyPrices[def.ticker] = history.length > 0 ? history[0].close : 0;
       });
-      avgBuyPricesRef.current = avgBuyPrices;
 
       // Fetch current quotes
       const quotes = await fetchQuotes(tickers);
@@ -95,35 +96,9 @@ function App() {
     }
   }, []);
 
-  /** Periodic refresh: only update current prices */
-  const refreshPrices = useCallback(async () => {
-    if (Object.keys(avgBuyPricesRef.current).length === 0) return; // not initialized yet
-    try {
-      const tickers = DEMO_ETFS.map((e) => e.ticker);
-      const quotes = await fetchQuotes(tickers);
-      setHoldings((prev) =>
-        prev.map((h) => {
-          const q = quotes.find((r) => r.ticker === h.ticker);
-          return q ? { ...h, currentPrice: q.price } : h;
-        })
-      );
-      setLastUpdated(new Date());
-      setError(null);
-    } catch (err) {
-      // Keep existing data, just show error
-      setError(err instanceof Error ? err.message : 'Price refresh failed');
-    }
-  }, []);
-
   useEffect(() => {
     loadInitialData();
   }, [loadInitialData]);
-
-  useEffect(() => {
-    const ms = settings.refreshInterval * 1000;
-    const id = setInterval(refreshPrices, ms);
-    return () => clearInterval(id);
-  }, [settings.refreshInterval, refreshPrices]);
 
   const handleSaveSettings = (s: Settings) => {
     saveSettings(s);
@@ -148,6 +123,7 @@ function App() {
         lastUpdated={lastUpdated}
         isLoading={isLoading}
         hasError={!!error && !lastUpdated}
+        lang={lang}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
@@ -160,7 +136,7 @@ function App() {
               </svg>
               <span className="text-red-300 text-sm">{error}</span>
               <button onClick={loadInitialData} className="ml-auto text-red-300 hover:text-white text-xs underline">
-                Retry
+                {t('retry', lang)}
               </button>
             </div>
           )}
@@ -169,34 +145,34 @@ function App() {
           {isLoading && holdings.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-slate-400 text-sm">Fetching live prices from Yahoo Finance…</p>
+              <p className="text-slate-400 text-sm">{t('fetchingPrices', lang)}</p>
             </div>
           ) : (
             <>
               {/* Stats Row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <StatCard
-                  title="Portfolio Value"
-                  value={formatCurrency(totalValue)}
+                  title={t('portfolioValue', lang)}
+                  value={formatCurrency(totalValue, currency, locale)}
                   subtitle={`${holdings.length} ETFs`}
                   positive={null}
                 />
                 <StatCard
-                  title="Total Cost"
-                  value={formatCurrency(totalCost)}
-                  subtitle="Invested capital"
+                  title={t('totalCost', lang)}
+                  value={formatCurrency(totalCost, currency, locale)}
+                  subtitle={t('investedCapital', lang)}
                   positive={null}
                 />
                 <StatCard
-                  title="Total Gain"
-                  value={formatCurrency(totalGain)}
-                  subtitle="Absolute return"
+                  title={t('totalGain', lang)}
+                  value={formatCurrency(totalGain, currency, locale)}
+                  subtitle={t('absoluteReturn', lang)}
                   positive={isPositive}
                 />
                 <StatCard
-                  title="Total Return"
+                  title={t('totalReturn', lang)}
                   value={formatPercent(totalGainPercent)}
-                  subtitle="Percentage return"
+                  subtitle={t('percentageReturn', lang)}
                   positive={isPositive}
                 />
               </div>
@@ -205,8 +181,8 @@ function App() {
               <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <h2 className="text-white font-semibold text-lg">Portfolio Development</h2>
-                    <p className="text-slate-400 text-xs mt-0.5">Value vs. Cost Basis over time</p>
+                    <h2 className="text-white font-semibold text-lg">{t('portfolioDevelopment', lang)}</h2>
+                    <p className="text-slate-400 text-xs mt-0.5">{t('valueVsCostBasis', lang)}</p>
                   </div>
                   <div className="flex gap-1">
                     {TIME_RANGES.map((range) => (
@@ -224,7 +200,7 @@ function App() {
                     ))}
                   </div>
                 </div>
-                <PortfolioChart data={portfolioHistory} timeRange={timeRange} />
+                <PortfolioChart data={portfolioHistory} timeRange={timeRange} lang={lang} currency={currency} />
               </div>
 
               {/* Per-ETF Development (shown when an ETF is selected) */}
@@ -233,12 +209,12 @@ function App() {
                   <div className="flex items-center justify-between mb-5">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-blue-400 text-xs font-semibold uppercase tracking-wide">ETF Detail</span>
+                        <span className="text-blue-400 text-xs font-semibold uppercase tracking-wide">{t('etfDetail', lang)}</span>
                       </div>
                       <h2 className="text-white font-semibold text-lg">{selectedHolding.ticker} — {selectedHolding.name}</h2>
                       <p className="text-slate-400 text-xs mt-0.5">
-                        {selectedHolding.shares} shares · Current: {formatCurrency(selectedHolding.currentPrice, selectedHolding.currency)} ·
-                        Sector: {selectedHolding.sector}
+                        {selectedHolding.shares} {t('sharesLabel', lang)} · {t('currentLabel', lang)}: {formatCurrency(selectedHolding.currentPrice, selectedHolding.currency, locale)} ·
+                        {t('sectorLabel', lang)}: {selectedHolding.sector}
                       </p>
                     </div>
                     <button
@@ -254,33 +230,36 @@ function App() {
                   <PortfolioChart
                     data={etfHistories[selectedHolding.ticker]}
                     timeRange={timeRange}
+                    lang={lang}
+                    currency={currency}
                   />
                 </div>
               )}
 
               {/* Allocation by ETF Chart */}
               <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                <h2 className="text-white font-semibold text-lg mb-1">Allocation by ETF</h2>
-                <p className="text-slate-400 text-xs mb-4">Portfolio weight per position</p>
+                <h2 className="text-white font-semibold text-lg mb-1">{t('allocationByEtf', lang)}</h2>
+                <p className="text-slate-400 text-xs mb-4">{t('portfolioWeightPerPosition', lang)}</p>
                 <AllocationChart holdings={holdings} />
               </div>
 
               {/* Holdings Table */}
               <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
                 <div className="mb-5">
-                  <h2 className="text-white font-semibold text-lg">Holdings</h2>
-                  <p className="text-slate-400 text-xs mt-0.5">All ETF positions and performance</p>
+                  <h2 className="text-white font-semibold text-lg">{t('holdings', lang)}</h2>
+                  <p className="text-slate-400 text-xs mt-0.5">{t('allEtfPositions', lang)}</p>
                 </div>
                 <HoldingsTable
                   holdings={holdings}
                   selectedTicker={selectedTicker}
                   onSelect={setSelectedTicker}
+                  lang={lang}
                 />
               </div>
 
               {/* Footer */}
               <footer className="text-center text-slate-500 text-xs pb-4">
-                PortfolioWatch — Live prices via Yahoo Finance · Auto-refresh every {settings.refreshInterval}s
+                {t('footer', lang)}
               </footer>
             </>
           )}

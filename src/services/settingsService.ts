@@ -1,19 +1,20 @@
 import { Settings } from '../types';
 
 const STORAGE_KEY = 'portfoliowatch_settings';
-const DEFAULT_SETTINGS: Settings = { refreshInterval: 30 };
-const MIN_REFRESH_INTERVAL = 5;
-const MAX_REFRESH_INTERVAL = 60;
+const DEFAULT_SETTINGS: Settings = { language: 'de', currency: 'EUR' };
 
 export function getSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_SETTINGS };
     const parsed: Partial<Settings> = JSON.parse(raw);
-    const refreshInterval = typeof parsed.refreshInterval === 'number'
-      ? Math.min(MAX_REFRESH_INTERVAL, Math.max(MIN_REFRESH_INTERVAL, parsed.refreshInterval))
-      : DEFAULT_SETTINGS.refreshInterval;
-    return { refreshInterval };
+    const language = parsed.language === 'de' || parsed.language === 'en'
+      ? parsed.language
+      : DEFAULT_SETTINGS.language;
+    const currency = parsed.currency === 'EUR' || parsed.currency === 'USD'
+      ? parsed.currency
+      : DEFAULT_SETTINGS.currency;
+    return { language, currency };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }

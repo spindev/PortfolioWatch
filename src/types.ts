@@ -25,6 +25,10 @@ export interface PortfolioSnapshot {
   totalCost: number;
 }
 
+export type Language = 'de' | 'en';
+export type Currency = 'EUR' | 'USD';
+
 export interface Settings {
-  refreshInterval: number; // seconds, default 30
+  language: Language;
+  currency: Currency;
 }
