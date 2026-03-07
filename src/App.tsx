@@ -84,7 +84,17 @@ function App() {
 
       // Build state — merge in any CSV-imported lots from the ref
       const newHoldings = buildHoldings(DEMO_ETFS, quotes, avgBuyPrices, rawHistories, importedLotsRef.current);
-      const newPortfolioHistory = buildPortfolioHistory(rawHistories, DEMO_ETFS, avgBuyPrices);
+
+      // Derive per-ticker shares and actual cost basis from the computed holdings
+      // so the portfolio chart reflects real imported data, not the static config.
+      const sharesByTicker: Record<string, number> = {};
+      const costBasisByTicker: Record<string, number> = {};
+      newHoldings.forEach((h) => {
+        sharesByTicker[h.ticker] = h.shares;
+        costBasisByTicker[h.ticker] = h.avgBuyPrice;
+      });
+
+      const newPortfolioHistory = buildPortfolioHistory(rawHistories, DEMO_ETFS, avgBuyPrices, sharesByTicker, costBasisByTicker);
 
       setHoldings(newHoldings);
       setPortfolioHistory(newPortfolioHistory);
@@ -170,6 +180,21 @@ function App() {
             <div className="flex flex-col items-center justify-center py-24 gap-4">
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
               <p className="text-gray-500 dark:text-slate-400 text-sm">Lade Kurse von Yahoo Finance…</p>
+            </div>
+          ) : !isLoading && holdings.length === 0 ? (
+            /* Empty portfolio — prompt the user to upload a CSV */
+            <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                <svg className="w-8 h-8 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-gray-900 dark:text-white font-semibold text-lg">Portfolio leer</h2>
+                <p className="text-gray-500 dark:text-slate-400 text-sm mt-1 max-w-xs">
+                  Importiere deine Käufe über den CSV-Upload-Button in der Kopfzeile.
+                </p>
+              </div>
             </div>
           ) : (
             <>

@@ -72,11 +72,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
           </div>
         </div>
 
-        <div className="border-t border-gray-200 dark:border-slate-700 pt-4 space-y-2">
-          <p className="text-gray-400 dark:text-slate-400 text-xs font-medium uppercase tracking-wide">Demo-Portfolio</p>
-          <p className="text-gray-500 dark:text-slate-400 text-xs">MSCI World (EUNL.DE) · EM IMI (IS3N.DE) · Euro Stoxx 50 (EXSA.DE) — je 100 Anteile</p>
-          <p className="text-gray-500 dark:text-slate-400 text-xs">Kurse via Yahoo Finance · Kaufkurs = Kurs vor 1 Jahr</p>
-        </div>
       </div>
     </div>
   );

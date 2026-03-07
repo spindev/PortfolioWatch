@@ -6,13 +6,8 @@
     "wkn": "A0RPWH",
     "name": "iShares Core MSCI World UCITS ETF",
     "sector": "Globale Aktien",
-    "shares": 100,
-    "lots": [
-      { "date": "2021-03-15", "shares": 25, "buyPrice": 58.40 },
-      { "date": "2021-09-20", "shares": 30, "buyPrice": 65.10 },
-      { "date": "2022-06-08", "shares": 25, "buyPrice": 54.20 },
-      { "date": "2023-01-17", "shares": 20, "buyPrice": 63.50 }
-    ]
+    "shares": 0,
+    "lots": []
   },
   {
     "id": "em",
@@ -21,12 +16,8 @@
     "wkn": "A111X9",
     "name": "iShares Core MSCI EM IMI UCITS ETF",
     "sector": "Schwellenländer",
-    "shares": 100,
-    "lots": [
-      { "date": "2021-05-10", "shares": 40, "buyPrice": 27.80 },
-      { "date": "2022-03-22", "shares": 35, "buyPrice": 23.50 },
-      { "date": "2023-04-05", "shares": 25, "buyPrice": 25.90 }
-    ]
+    "shares": 0,
+    "lots": []
   },
   {
     "id": "europe",
@@ -35,12 +26,8 @@
     "wkn": "593395",
     "name": "iShares Core EURO STOXX 50 UCITS ETF",
     "sector": "Eurozone Aktien",
-    "shares": 100,
-    "lots": [
-      { "date": "2021-02-01", "shares": 30, "buyPrice": 40.10 },
-      { "date": "2021-11-15", "shares": 30, "buyPrice": 43.80 },
-      { "date": "2022-10-03", "shares": 40, "buyPrice": 35.20 }
-    ]
+    "shares": 0,
+    "lots": []
   },
   {
     "id": "world-sri",
