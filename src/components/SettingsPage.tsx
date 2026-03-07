@@ -7,10 +7,13 @@ interface SettingsPageProps {
   onClose: () => void;
 }
 
-const PRESETS = [10, 30, 60, 120, 300];
+const MIN_INTERVAL = 5;
+const MAX_INTERVAL = 60;
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, onClose }) => {
-  const [refreshInterval, setRefreshInterval] = useState(settings.refreshInterval);
+  const [refreshInterval, setRefreshInterval] = useState(
+    Math.min(MAX_INTERVAL, Math.max(MIN_INTERVAL, settings.refreshInterval))
+  );
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
@@ -20,11 +23,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
       setSaved(false);
       onClose();
     }, 1000);
-  };
-
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = parseInt(e.target.value, 10);
-    if (!isNaN(v) && v >= 5) setRefreshInterval(v);
   };
 
   return (
@@ -40,53 +38,29 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
             Auto-refresh interval
           </label>
           <p className="text-slate-400 text-xs">
-            How often live prices are fetched from Yahoo Finance. Minimum 5 seconds.
+            How often live prices are fetched from Yahoo Finance (5 – 60 seconds).
           </p>
 
-          {/* Preset buttons */}
-          <div className="flex flex-wrap gap-2">
-            {PRESETS.map((preset) => (
-              <button
-                key={preset}
-                onClick={() => setRefreshInterval(preset)}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                  refreshInterval === preset
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                {preset < 60 ? `${preset}s` : `${preset / 60}m`}
-              </button>
-            ))}
-          </div>
-
-          {/* Manual input */}
-          <div className="flex items-center gap-3">
+          {/* Slider + selected value */}
+          <div className="flex items-center gap-4">
             <input
-              type="number"
-              min={5}
+              type="range"
+              min={MIN_INTERVAL}
+              max={MAX_INTERVAL}
+              step={5}
               value={refreshInterval}
-              onChange={handleInput}
-              className="w-28 bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setRefreshInterval(Number(e.target.value))}
+              className="flex-1 accent-blue-500"
             />
-            <span className="text-slate-400 text-sm">seconds</span>
+            <span className="text-white text-sm font-medium w-10 text-right">
+              {refreshInterval}s
+            </span>
           </div>
-
-          {/* Slider */}
-          <input
-            type="range"
-            min={5}
-            max={300}
-            step={5}
-            value={refreshInterval}
-            onChange={(e) => setRefreshInterval(Number(e.target.value))}
-            className="w-full accent-blue-500"
-          />
           <div className="flex justify-between text-slate-500 text-xs">
             <span>5s</span>
-            <span>1m</span>
-            <span>2m</span>
-            <span>5m</span>
+            <span>20s</span>
+            <span>40s</span>
+            <span>60s</span>
           </div>
         </div>
 
@@ -105,7 +79,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
         <div className="border-t border-slate-700 pt-4 space-y-2">
           <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">Demo Portfolio</p>
           <p className="text-slate-400 text-xs">
-            ESG (ESGU) · World (URTH) · EM (EEM) — 100 shares each
+            World (URTH) · EM (EEM) · ESG Europe (LCEU.SW) — 100 shares each
           </p>
           <p className="text-slate-400 text-xs">
             Prices fetched from Yahoo Finance · Buy price = price 1 year ago

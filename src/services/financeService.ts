@@ -11,13 +11,6 @@ export interface DemoEtfDef {
 
 export const DEMO_ETFS: DemoEtfDef[] = [
   {
-    id: 'esg',
-    ticker: 'ESGU',
-    name: 'iShares MSCI USA ESG Optimized ETF',
-    sector: 'ESG Equity',
-    shares: 100,
-  },
-  {
     id: 'world',
     ticker: 'URTH',
     name: 'iShares MSCI World ETF',
@@ -29,6 +22,13 @@ export const DEMO_ETFS: DemoEtfDef[] = [
     ticker: 'EEM',
     name: 'iShares MSCI Emerging Markets ETF',
     sector: 'Emerging Markets',
+    shares: 100,
+  },
+  {
+    id: 'esg',
+    ticker: 'LCEU.SW',
+    name: 'iShares MSCI Europe ESG Enhanced ETF',
+    sector: 'ESG Europe',
     shares: 100,
   },
 ];
@@ -63,21 +63,12 @@ export interface HistoricalPoint {
   close: number;
 }
 
-interface YFQuoteItem {
-  symbol: string;
-  regularMarketPrice: number;
-  currency: string;
-}
-
-interface YFQuoteResponse {
-  quoteResponse?: { result?: YFQuoteItem[] };
-}
-
 interface YFChartQuote {
   close: (number | null)[];
 }
 
 interface YFChartResult {
+  meta?: { currency?: string };
   timestamp?: number[];
   indicators?: { quote?: YFChartQuote[] };
 }
@@ -87,16 +78,28 @@ interface YFChartResponse {
 }
 
 export async function fetchQuotes(tickers: string[]): Promise<QuoteResult[]> {
-  const url = `${YF_BASE}/v7/finance/quote?symbols=${tickers.join(',')}`;
-  const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } });
-  if (!res.ok) throw new Error(`Quote API error: ${res.status}`);
-  const data: YFQuoteResponse = await res.json();
-  const results: YFQuoteItem[] = data.quoteResponse?.result ?? [];
-  return results.map((r) => ({
-    ticker: r.symbol,
-    price: r.regularMarketPrice ?? 0,
-    currency: r.currency ?? 'USD',
-  }));
+  // Use the chart endpoint to retrieve the latest close price for each ticker.
+  // The v7/finance/quote endpoint returns 403 without authenticated sessions,
+  // while v8/finance/chart continues to work through the CORS proxy.
+  const results = await Promise.all(
+    tickers.map(async (ticker): Promise<QuoteResult> => {
+      const url = `${YF_BASE}/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+      const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error(`Quote API error: ${res.status}`);
+      const data: YFChartResponse = await res.json();
+      const result = data.chart?.result?.[0];
+      if (!result) throw new Error('No chart data in response');
+      const closes: (number | null)[] = result.indicators?.quote?.[0]?.close ?? [];
+      const validCloses = closes.filter((c): c is number => c != null && c > 0);
+      const price = validCloses[validCloses.length - 1] ?? 0;
+      return {
+        ticker,
+        price,
+        currency: result.meta?.currency ?? 'USD',
+      };
+    })
+  );
+  return results;
 }
 
 export async function fetchHistorical(ticker: string): Promise<HistoricalPoint[]> {
@@ -179,9 +182,10 @@ export function buildHoldings(
   quotes.forEach((q) => { quoteMap[q.ticker] = q; });
   return etfDefs.map((def, i) => {
     const quote = quoteMap[def.ticker];
-    const currentPrice = quote?.price ?? 0;
+    const quotePrice = quote?.price ?? 0;
     const currency = quote?.currency ?? 'USD';
-    const avgBuyPrice = avgBuyPrices[def.ticker] ?? currentPrice;
+    const avgBuyPrice = avgBuyPrices[def.ticker] ?? quotePrice;
+    const currentPrice = quotePrice > 0 ? quotePrice : avgBuyPrice;
     return {
       id: String(i + 1),
       etfId: def.id,
