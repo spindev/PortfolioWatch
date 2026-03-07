@@ -185,21 +185,28 @@ function App() {
 
   /** Called when the user confirms their ISIN selection in the modal */
   const handleImportConfirm = (selectedByIsin: Record<string, PurchaseLot[]>, salesByIsin: Record<string, SaleLot[]>) => {
-    // Replace buy lots per ISIN with the data from the new CSV.
-    // Using replace (not merge) ensures that a corrected re-import fully
-    // overwrites the old data and that genuine duplicate orders on the same
-    // day at the same price are never silently dropped.
+    // Merge buy lots per ISIN: combine existing (manual) lots with the CSV lots,
+    // deduplicating by date + shares + buyPrice so re-importing the same CSV
+    // does not create duplicate entries.
+    const lotKey = (l: PurchaseLot) => `${l.date}|${l.shares}|${l.buyPrice}`;
     const mergedLots: Record<string, PurchaseLot[]> = { ...importedLotsRef.current };
     Object.entries(selectedByIsin).forEach(([isin, newLots]) => {
-      mergedLots[isin] = newLots;
+      const existing = mergedLots[isin] ?? [];
+      const seen = new Set(existing.map(lotKey));
+      const unique = newLots.filter((l) => !seen.has(lotKey(l)));
+      mergedLots[isin] = [...existing, ...unique].sort((a, b) => a.date.localeCompare(b.date));
     });
     importedLotsRef.current = mergedLots;
     saveImportedLots(mergedLots);
 
-    // Replace sell lots per ISIN with the data from the new CSV.
+    // Merge sell lots per ISIN: same deduplication strategy (date + shares).
+    const saleKey = (l: SaleLot) => `${l.date}|${l.shares}`;
     const mergedSales: Record<string, SaleLot[]> = { ...importedSalesRef.current };
     Object.entries(salesByIsin).forEach(([isin, newSales]) => {
-      mergedSales[isin] = newSales;
+      const existing = mergedSales[isin] ?? [];
+      const seen = new Set(existing.map(saleKey));
+      const unique = newSales.filter((l) => !seen.has(saleKey(l)));
+      mergedSales[isin] = [...existing, ...unique].sort((a, b) => a.date.localeCompare(b.date));
     });
     importedSalesRef.current = mergedSales;
     saveImportedSales(mergedSales);
@@ -219,7 +226,6 @@ function App() {
       <Header
         page={page}
         onNavigate={setPage}
-        lastUpdated={lastUpdated}
         isLoading={isLoading}
         hasError={!!error && !lastUpdated}
         onCsvUpload={handleCsvUpload}

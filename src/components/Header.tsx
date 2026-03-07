@@ -3,14 +3,13 @@ import React, { useRef } from 'react';
 interface HeaderProps {
   page: 'portfolio' | 'settings';
   onNavigate: (page: 'portfolio' | 'settings') => void;
-  lastUpdated: Date | null;
   isLoading: boolean;
   hasError: boolean;
   onCsvUpload?: (file: File) => void;
   onManualBuy?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, isLoading, hasError, onCsvUpload, onManualBuy }) => {
+export const Header: React.FC<HeaderProps> = ({ page, onNavigate, isLoading, hasError, onCsvUpload, onManualBuy }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,15 +44,8 @@ export const Header: React.FC<HeaderProps> = ({ page, onNavigate, lastUpdated, i
           {isLoading && !hasError && (
             <span className="inline-block w-2 h-2 bg-blue-400 rounded-full animate-pulse flex-shrink-0" />
           )}
-          {hasError ? (
+          {hasError && (
             <span className="text-red-500 dark:text-red-400">Fehler beim Abrufen der Kurse</span>
-          ) : lastUpdated ? (
-            <>
-              <span className="hidden sm:inline">Aktualisiert:</span>
-              <span className="truncate">{lastUpdated.toLocaleTimeString('de-DE')}</span>
-            </>
-          ) : (
-            <span>Wird geladen…</span>
           )}
         </div>
 
