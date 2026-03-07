@@ -263,14 +263,37 @@ export function buildPortfolioHistory(
   const etfsWithData = activeDefs.filter((def) => (etfHistories[def.ticker] ?? []).length > 0);
   if (etfsWithData.length === 0) return [];
 
-  // Use dates where every ETF *with data* has a data point
-  const firstTicker = etfsWithData[0].ticker;
-  const commonDates = (etfHistories[firstTicker] ?? [])
-    .map((p) => p.date)
-    .filter((date) => etfsWithData.every((def) => priceMaps[def.ticker][date] != null))
-    .sort();
+  // Collect the UNION of all trading dates across every ETF with data.
+  // Using intersection (old approach) excluded any date where even one ETF had
+  // a gap (common on Gettex where some ETFs skip a day due to low liquidity),
+  // which could leave the chart mostly empty.
+  const allDatesSet = new Set<string>();
+  etfsWithData.forEach((def) => {
+    (etfHistories[def.ticker] ?? []).forEach((p) => allDatesSet.add(p.date));
+  });
+  const allDates = Array.from(allDatesSet).sort();
 
-  return commonDates.map((date) => {
+  // Forward-fill each ETF's price map so that minor single-day gaps are bridged
+  // with the last known closing price instead of falling back to cost basis.
+  const filledPriceMaps: Record<string, Record<string, number>> = {};
+  etfsWithData.forEach((def) => {
+    filledPriceMaps[def.ticker] = {};
+    let lastPrice: number | undefined;
+    for (const date of allDates) {
+      const rawPrice = priceMaps[def.ticker][date];
+      if (rawPrice != null) lastPrice = rawPrice;
+      if (lastPrice != null) filledPriceMaps[def.ticker][date] = lastPrice;
+    }
+  });
+
+  // Only include dates where every ETF with data has at least a forward-filled
+  // price. This naturally excludes dates before the last-listed ETF started
+  // trading while still including all trading days after that point.
+  const validDates = allDates.filter((date) =>
+    etfsWithData.every((def) => filledPriceMaps[def.ticker][date] != null),
+  );
+
+  return validDates.map((date) => {
     let totalValue = 0;
     let totalCost = 0;
     activeDefs.forEach((def) => {
@@ -291,9 +314,10 @@ export function buildPortfolioHistory(
         costBasis = costBasisByTicker[def.ticker] ?? avgBuyPrices[def.ticker] ?? 0;
       }
 
-      // Fall back to cost basis (or historical avg) when the price map has no entry for this date
+      // Use forward-filled price; fall back to cost basis only for ETFs with
+      // no historical data at all (i.e. not in filledPriceMaps).
       const priceFallback = costBasis > 0 ? costBasis : (avgBuyPrices[def.ticker] ?? 0);
-      const price = priceMaps[def.ticker]?.[date] ?? priceFallback;
+      const price = filledPriceMaps[def.ticker]?.[date] ?? priceFallback;
       totalValue += shares * price;
       totalCost += shares * costBasis;
     });
