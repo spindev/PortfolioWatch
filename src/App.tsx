@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { StatCard } from './components/StatCard';
 import { PortfolioChart } from './components/PortfolioChart';
 import { HoldingsTable } from './components/HoldingsTable';
 import { SettingsPage } from './components/SettingsPage';
+import { CsvImportModal } from './components/CsvImportModal';
 import {
   DEMO_ETFS,
   fetchQuotes,
@@ -13,6 +14,8 @@ import {
   type HistoricalPoint,
 } from './services/financeService';
 import { getSettings, saveSettings } from './services/settingsService';
+import { getImportedLots, saveImportedLots } from './services/importedLotsService';
+import { parseBrokerCsv } from './utils/csvParser';
 import {
   calculateTotalValue,
   calculateTotalCost,
@@ -21,7 +24,7 @@ import {
   formatCurrency,
   formatPercent,
 } from './utils/calculations';
-import { Holding, PortfolioSnapshot, Settings } from './types';
+import { Holding, PortfolioSnapshot, PurchaseLot, Settings } from './types';
 
 const CURRENCY = 'EUR';
 const LOCALE = 'de-DE';
@@ -42,6 +45,10 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // CSV import state
+  const importedLotsRef = useRef<Record<string, PurchaseLot[]>>(getImportedLots());
+  const [csvImportLots, setCsvImportLots] = useState<import('./utils/csvParser').CsvLot[] | null>(null);
 
   const isDark = settings.theme === 'dark';
 
@@ -75,8 +82,8 @@ function App() {
       // Fetch current quotes
       const quotes = await fetchQuotes(tickers);
 
-      // Build state
-      const newHoldings = buildHoldings(DEMO_ETFS, quotes, avgBuyPrices, rawHistories);
+      // Build state — merge in any CSV-imported lots from the ref
+      const newHoldings = buildHoldings(DEMO_ETFS, quotes, avgBuyPrices, rawHistories, importedLotsRef.current);
       const newPortfolioHistory = buildPortfolioHistory(rawHistories, DEMO_ETFS, avgBuyPrices);
 
       setHoldings(newHoldings);
@@ -98,6 +105,34 @@ function App() {
     setSettings(s);
   };
 
+  /** Parse a selected CSV file and open the ISIN selection modal */
+  const handleCsvUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const parsed = parseBrokerCsv(text);
+      setCsvImportLots(parsed);
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  /** Called when the user confirms their ISIN selection in the modal */
+  const handleImportConfirm = (selectedByIsin: Record<string, PurchaseLot[]>) => {
+    const merged: Record<string, PurchaseLot[]> = { ...importedLotsRef.current };
+    Object.entries(selectedByIsin).forEach(([isin, newLots]) => {
+      const existing = merged[isin] ?? [];
+      // Deduplicate: skip lots that already exist (same date, shares, buyPrice)
+      const isoDuplicate = (a: PurchaseLot, b: PurchaseLot) =>
+        a.date === b.date && a.shares === b.shares && a.buyPrice === b.buyPrice;
+      const unique = newLots.filter((nl) => !existing.some((el) => isoDuplicate(el, nl)));
+      merged[isin] = [...existing, ...unique];
+    });
+    importedLotsRef.current = merged;
+    saveImportedLots(merged);
+    setCsvImportLots(null);
+    loadInitialData();
+  };
+
   const totalValue = calculateTotalValue(holdings);
   const totalCost = calculateTotalCost(holdings);
   const totalGain = calculateTotalGain(holdings);
@@ -112,10 +147,7 @@ function App() {
         lastUpdated={lastUpdated}
         isLoading={isLoading}
         hasError={!!error && !lastUpdated}
-        onCsvUpload={(file: File) => {
-          // TODO: parse and import CSV data
-          console.log('CSV selected:', file.name);
-        }}
+        onCsvUpload={handleCsvUpload}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
@@ -218,6 +250,16 @@ function App() {
       {/* Settings overlay – rendered on top of portfolio content */}
       {page === 'settings' && (
         <SettingsPage settings={settings} onSave={handleSaveSettings} onClose={() => setPage('portfolio')} />
+      )}
+
+      {/* CSV import modal – shown after a CSV file is selected */}
+      {csvImportLots !== null && (
+        <CsvImportModal
+          lots={csvImportLots}
+          knownEtfs={DEMO_ETFS}
+          onConfirm={handleImportConfirm}
+          onClose={() => setCsvImportLots(null)}
+        />
       )}
     </div>
   );

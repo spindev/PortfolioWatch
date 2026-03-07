@@ -8,6 +8,8 @@ export interface DemoEtfDef {
   name: string;
   sector: string;
   shares: number;
+  isin?: string;
+  wkn?: string;
   lots?: PurchaseLot[];
 }
 
@@ -218,26 +220,34 @@ export function buildHoldings(
   quotes: QuoteResult[],
   avgBuyPrices: Record<string, number>,
   rawHistories: Record<string, HistoricalPoint[]> = {},
+  importedLotsByIsin: Record<string, PurchaseLot[]> = {},
 ): Holding[] {
   const quoteMap: Record<string, QuoteResult> = {};
   quotes.forEach((q) => { quoteMap[q.ticker] = q; });
   return etfDefs.map((def, i) => {
     const quote = quoteMap[def.ticker];
     const quotePrice = quote?.price ?? 0;
-    const currency = quote?.currency ?? 'USD';
+    const currency = quote?.currency ?? 'EUR';
 
-    // If lots are defined, derive avgBuyPrice from weighted average of lots
-    const lots: PurchaseLot[] = (def.lots ?? [])
-      .slice()
+    // Merge static lots from definition with any CSV-imported lots (by ISIN)
+    const staticLots: PurchaseLot[] = (def.lots ?? []).slice();
+    const csvLots: PurchaseLot[] = def.isin ? (importedLotsByIsin[def.isin] ?? []) : [];
+    const lots: PurchaseLot[] = [...staticLots, ...csvLots]
       .sort((a, b) => a.date.localeCompare(b.date));
+
     let avgBuyPrice: number;
     if (lots.length > 0) {
-      const totalShares = lots.reduce((s, l) => s + l.shares, 0);
       const totalCost = lots.reduce((s, l) => s + l.shares * l.buyPrice, 0);
-      avgBuyPrice = totalShares > 0 ? totalCost / totalShares : avgBuyPrices[def.ticker] ?? quotePrice;
+      const totalLotShares = lots.reduce((s, l) => s + l.shares, 0);
+      avgBuyPrice = totalLotShares > 0 ? totalCost / totalLotShares : avgBuyPrices[def.ticker] ?? quotePrice;
     } else {
       avgBuyPrice = avgBuyPrices[def.ticker] ?? quotePrice;
     }
+
+    // Derive total shares: prefer sum of lots when available, fall back to def.shares
+    const shares = lots.length > 0
+      ? lots.reduce((s, l) => s + l.shares, 0)
+      : def.shares;
 
     const currentPrice = quotePrice > 0 ? quotePrice : avgBuyPrice;
     const history = (rawHistories[def.ticker] ?? []).map((p) => ({ date: p.date, close: p.close }));
@@ -245,8 +255,10 @@ export function buildHoldings(
       id: String(i + 1),
       etfId: def.id,
       ticker: def.ticker,
+      isin: def.isin,
+      wkn: def.wkn,
       name: def.name,
-      shares: def.shares,
+      shares,
       avgBuyPrice,
       currentPrice,
       currency,
@@ -254,6 +266,6 @@ export function buildHoldings(
       lots,
       history,
     };
-  });
+  }).filter((h) => h.shares > 0);
 }
 
