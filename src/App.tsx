@@ -112,6 +112,10 @@ function App() {
         lastUpdated={lastUpdated}
         isLoading={isLoading}
         hasError={!!error && !lastUpdated}
+        onCsvUpload={(file: File) => {
+          // TODO: parse and import CSV data
+          console.log('CSV selected:', file.name);
+        }}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
