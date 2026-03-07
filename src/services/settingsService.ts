@@ -1,20 +1,17 @@
 import { Settings } from '../types';
 
 const STORAGE_KEY = 'portfoliowatch_settings';
-const DEFAULT_SETTINGS: Settings = { language: 'de', currency: 'EUR' };
+const DEFAULT_SETTINGS: Settings = { theme: 'dark' };
 
 export function getSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_SETTINGS };
     const parsed: Partial<Settings> = JSON.parse(raw);
-    const language = parsed.language === 'de' || parsed.language === 'en'
-      ? parsed.language
-      : DEFAULT_SETTINGS.language;
-    const currency = parsed.currency === 'EUR' || parsed.currency === 'USD'
-      ? parsed.currency
-      : DEFAULT_SETTINGS.currency;
-    return { language, currency };
+    const theme = parsed.theme === 'dark' || parsed.theme === 'light'
+      ? parsed.theme
+      : DEFAULT_SETTINGS.theme;
+    return { theme };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }

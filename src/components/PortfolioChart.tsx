@@ -9,23 +9,21 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { PortfolioSnapshot } from '../types';
-import { Language } from '../types';
-import { t, getLocale, getCurrencySymbol } from '../i18n';
 import { formatCurrency } from '../utils/calculations';
+
+const CURRENCY = 'EUR';
+const LOCALE = 'de-DE';
 
 interface PortfolioChartProps {
   data: PortfolioSnapshot[];
   timeRange: '1M' | '3M' | '6M' | '1Y' | 'ALL';
-  lang: Language;
-  currency: string;
 }
 
 const CustomTooltip = ({
-  active, payload, label, lang, currency, locale,
+  active, payload, label,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   active?: any; payload?: any[]; label?: string;
-  lang: Language; currency: string; locale: string;
 }) => {
   if (active && payload && payload.length) {
     const value = payload[0]?.value;
@@ -33,12 +31,12 @@ const CustomTooltip = ({
     const gain = value - cost;
     const gainPct = ((gain / cost) * 100).toFixed(2);
     return (
-      <div className="bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm">
-        <p className="text-slate-300 mb-1">{label}</p>
-        <p className="text-blue-400">{t('tooltipValue', lang)}: {formatCurrency(value, currency, locale)}</p>
-        <p className="text-slate-400">{t('tooltipCost', lang)}: {formatCurrency(cost, currency, locale)}</p>
-        <p className={gain >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-          {t('tooltipPnl', lang)}: {gain >= 0 ? '+' : ''}{formatCurrency(gain, currency, locale)} ({gain >= 0 ? '+' : ''}{gainPct}%)
+      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg p-3 text-sm shadow-lg">
+        <p className="text-gray-600 dark:text-slate-300 mb-1">{label}</p>
+        <p className="text-blue-600 dark:text-blue-400">Wert: {formatCurrency(value, CURRENCY, LOCALE)}</p>
+        <p className="text-gray-500 dark:text-slate-400">Kosten: {formatCurrency(cost, CURRENCY, LOCALE)}</p>
+        <p className={gain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
+          G/V: {gain >= 0 ? '+' : ''}{formatCurrency(gain, CURRENCY, LOCALE)} ({gain >= 0 ? '+' : ''}{gainPct}%)
         </p>
       </div>
     );
@@ -46,10 +44,7 @@ const CustomTooltip = ({
   return null;
 };
 
-export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange, lang, currency }) => {
-  const locale = getLocale(lang);
-  const symbol = getCurrencySymbol(currency);
-
+export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange }) => {
   const filtered = React.useMemo(() => {
     const days = timeRange === '1M' ? 30 : timeRange === '3M' ? 90 : timeRange === '6M' ? 180 : timeRange === '1Y' ? 365 : data.length;
     return data.slice(-days);
@@ -71,10 +66,10 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange,
             <stop offset="95%" stopColor="#94a3b8" stopOpacity={0.0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
         <XAxis
           dataKey="date"
-          tick={{ fill: '#94a3b8', fontSize: 11 }}
+          tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
           tickLine={false}
           axisLine={false}
           interval={tickInterval}
@@ -84,13 +79,13 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange,
           }}
         />
         <YAxis
-          tick={{ fill: '#94a3b8', fontSize: 11 }}
+          tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(val) => `${symbol}${(val / 1000).toFixed(1)}k`}
+          tickFormatter={(val) => `€${(val / 1000).toFixed(1)}k`}
           domain={['auto', 'auto']}
         />
-        <Tooltip content={<CustomTooltip lang={lang} currency={currency} locale={locale} />} />
+        <Tooltip content={<CustomTooltip />} />
         <Area
           type="monotone"
           dataKey="totalCost"
@@ -98,7 +93,7 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange,
           strokeWidth={1.5}
           strokeDasharray="4 4"
           fill="url(#costGradient)"
-          name={t('costBasis', lang)}
+          name="Kostenbasis"
         />
         <Area
           type="monotone"
@@ -106,7 +101,7 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange,
           stroke="#3b82f6"
           strokeWidth={2}
           fill="url(#valueGradient)"
-          name={t('portfolioValueLabel', lang)}
+          name="Portfoliowert"
         />
       </AreaChart>
     </ResponsiveContainer>

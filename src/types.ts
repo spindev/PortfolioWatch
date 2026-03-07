@@ -25,10 +25,8 @@ export interface PortfolioSnapshot {
   totalCost: number;
 }
 
-export type Language = 'de' | 'en';
-export type Currency = 'EUR' | 'USD';
+export type Theme = 'dark' | 'light';
 
 export interface Settings {
-  language: Language;
-  currency: Currency;
+  theme: Theme;
 }
