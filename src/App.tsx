@@ -10,7 +10,6 @@ import {
   fetchQuotes,
   fetchHistorical,
   buildHoldings,
-  buildEtfHistory,
   buildPortfolioHistory,
   type HistoricalPoint,
 } from './services/financeService';
@@ -36,11 +35,9 @@ const TIME_RANGES: TimeRange[] = ['1M', '3M', '6M', '1Y', 'ALL'];
 function App() {
   const [page, setPage] = useState<Page>('portfolio');
   const [timeRange, setTimeRange] = useState<TimeRange>('1Y');
-  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
 
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [portfolioHistory, setPortfolioHistory] = useState<PortfolioSnapshot[]>([]);
-  const [etfHistories, setEtfHistories] = useState<Record<string, PortfolioSnapshot[]>>({});
 
   const [settings, setSettings] = useState<Settings>(getSettings);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,18 +79,9 @@ function App() {
       // Build state
       const newHoldings = buildHoldings(DEMO_ETFS, quotes, avgBuyPrices);
       const newPortfolioHistory = buildPortfolioHistory(rawHistories, DEMO_ETFS, avgBuyPrices);
-      const newEtfHistories: Record<string, PortfolioSnapshot[]> = {};
-      DEMO_ETFS.forEach((def) => {
-        newEtfHistories[def.ticker] = buildEtfHistory(
-          rawHistories[def.ticker] ?? [],
-          def.shares,
-          avgBuyPrices[def.ticker] ?? 0,
-        );
-      });
 
       setHoldings(newHoldings);
       setPortfolioHistory(newPortfolioHistory);
-      setEtfHistories(newEtfHistories);
       setLastUpdated(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Daten konnten nicht geladen werden');
@@ -116,10 +104,6 @@ function App() {
   const totalGain = calculateTotalGain(holdings);
   const totalGainPercent = calculateTotalGainPercent(holdings);
   const isPositive = totalGain >= 0;
-
-  const selectedHolding = selectedTicker
-    ? holdings.find((h) => h.ticker === selectedTicker) ?? null
-    : null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
@@ -208,37 +192,6 @@ function App() {
                 <PortfolioChart data={portfolioHistory} timeRange={timeRange} />
               </div>
 
-              {/* Per-ETF Development (shown when an ETF is selected) */}
-              {selectedHolding && etfHistories[selectedHolding.ticker] && (
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 border border-blue-300 dark:border-blue-700/50">
-                  <div className="flex items-start justify-between mb-4 sm:mb-5">
-                    <div className="min-w-0 mr-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-600 dark:text-blue-400 text-xs font-semibold uppercase tracking-wide">ETF Detail</span>
-                      </div>
-                      <h2 className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg truncate">{selectedHolding.ticker} — {selectedHolding.name}</h2>
-                      <p className="text-gray-500 dark:text-slate-400 text-xs mt-0.5">
-                        {selectedHolding.shares} Anteile · Aktuell: {formatCurrency(selectedHolding.currentPrice, CURRENCY, LOCALE)} ·
-                        Sektor: {selectedHolding.sector}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedTicker(null)}
-                      className="text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors flex-shrink-0"
-                      title="Detailansicht schließen"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <PortfolioChart
-                    data={etfHistories[selectedHolding.ticker]}
-                    timeRange={timeRange}
-                  />
-                </div>
-              )}
-
               {/* Holdings Table */}
               <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-slate-700">
                 <div className="mb-4 sm:mb-5">
@@ -247,8 +200,6 @@ function App() {
                 </div>
                 <HoldingsTable
                   holdings={holdings}
-                  selectedTicker={selectedTicker}
-                  onSelect={setSelectedTicker}
                 />
               </div>
 

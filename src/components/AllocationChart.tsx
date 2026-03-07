@@ -52,19 +52,20 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdings }) =>
   }));
 
   return (
-    <div className="h-[220px] sm:h-[280px]">
+    <div className="h-[260px] sm:h-[300px]">
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <Pie
           data={data}
           cx="50%"
-          cy="50%"
+          cy="46%"
           innerRadius={65}
           outerRadius={100}
           paddingAngle={3}
           dataKey="value"
           labelLine={false}
           label={<CustomLabel />}
+          isAnimationActive={false}
         >
           {data.map((_, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -72,6 +73,8 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdings }) =>
         </Pie>
         <Tooltip content={<CustomTooltip />} />
         <Legend
+          verticalAlign="bottom"
+          height={36}
           formatter={(value) => <span style={{ color: '#94a3b8', fontSize: 12 }}>{value}</span>}
         />
       </PieChart>
