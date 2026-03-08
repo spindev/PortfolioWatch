@@ -56,8 +56,15 @@ const ETF_TIME_RANGES: EtfTimeRange[] = ['1M', '3M', '6M', '1Y', '3Y', '5Y', 'MA
 const EtfChart: React.FC<{ holding: Holding; compact?: boolean }> = ({ holding, compact = false }) => {
   const [timeRange, setTimeRange] = useState<EtfTimeRange>('1Y');
 
+  // First purchase date for this holding – used to anchor the MAX range
+  const firstLotDate = holding.lots.length > 0 ? holding.lots[0].date : null;
+
   const data = React.useMemo(() => {
-    if (timeRange === 'MAX') return holding.history;
+    if (timeRange === 'MAX') {
+      return firstLotDate
+        ? holding.history.filter((d) => d.date >= firstLotDate)
+        : holding.history;
+    }
     const days =
       timeRange === '1M' ? 30 :
       timeRange === '3M' ? 90 :
@@ -68,7 +75,16 @@ const EtfChart: React.FC<{ holding: Holding; compact?: boolean }> = ({ holding, 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
     return holding.history.filter((d) => new Date(d.date) >= cutoff);
-  }, [holding.history, timeRange]);
+  }, [holding.history, timeRange, firstLotDate]);
+
+  // Percentage change from the start to the end of the visible data window
+  const periodReturn = React.useMemo(() => {
+    if (data.length < 2) return null;
+    const startPrice = data[0].close;
+    const endPrice = data[data.length - 1].close;
+    if (startPrice === 0) return null;
+    return ((endPrice - startPrice) / startPrice) * 100;
+  }, [data]);
 
   // Use a year-aware format for ranges longer than 6 months
   const useLongFormat = timeRange === '1Y' || timeRange === '3Y' || timeRange === '5Y' || timeRange === 'MAX';
@@ -86,21 +102,28 @@ const EtfChart: React.FC<{ holding: Holding; compact?: boolean }> = ({ holding, 
 
   return (
     <div>
-      {/* Time range selector */}
-      <div className="flex gap-1 mb-3 flex-wrap">
-        {ETF_TIME_RANGES.map((r) => (
-          <button
-            key={r}
-            onClick={() => setTimeRange(r)}
-            className={`px-2 py-1 text-xs rounded-md transition-colors ${
-              timeRange === r
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
-            }`}
-          >
-            {r}
-          </button>
-        ))}
+      {/* Time range selector + period return */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex gap-1 flex-wrap">
+          {ETF_TIME_RANGES.map((r) => (
+            <button
+              key={r}
+              onClick={() => setTimeRange(r)}
+              className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                timeRange === r
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+        {periodReturn !== null && (
+          <span className={`text-sm font-semibold ${periodReturn >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+            {formatPercent(periodReturn)}
+          </span>
+        )}
       </div>
       <div className={compact ? 'h-[180px]' : 'h-[200px] sm:h-[240px]'}>
         <ResponsiveContainer width="100%" height="100%">
