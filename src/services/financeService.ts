@@ -200,19 +200,6 @@ export async function fetchHistorical(ticker: string): Promise<HistoricalPoint[]
   return data.history;
 }
 
-/** Turn raw history + metadata into portfolio snapshots for a single ETF */
-export function buildEtfHistory(
-  history: HistoricalPoint[],
-  shares: number,
-  avgBuyPrice: number,
-): PortfolioSnapshot[] {
-  return history.map((pt) => ({
-    date: pt.date,
-    totalValue: Math.round(shares * pt.close * 100) / 100,
-    totalCost: Math.round(shares * avgBuyPrice * 100) / 100,
-  }));
-}
-
 /** Per-ticker transaction history used for time-aware portfolio history */
 export interface TickerTransactions {
   /** All buy lots for this ticker, sorted oldest-first */
@@ -380,8 +367,22 @@ export function buildHoldings(
       ? lots.reduce((s, l) => s + l.shares, 0)
       : def.shares;
 
-    const currentPrice = quotePrice > 0 ? quotePrice : avgBuyPrice;
     const history = (rawHistories[def.ticker] ?? []).map((p) => ({ date: p.date, close: p.close }));
+    const lastHistoricalClose = history.length > 0 ? history[history.length - 1].close : 0;
+    // Determine the best available price for this holding, in order of preference:
+    //   1. Live quote  (most up-to-date)
+    //   2. Last historical close  (keeps gain/loss meaningful when quotes.json is
+    //      stale — e.g. after a ticker rename from .MU → .DE before the static
+    //      data files are regenerated via scripts/fetch-finance-data.mjs)
+    //   3. Average buy price  (last resort — produces 0 gain, but is never stale)
+    let currentPrice: number;
+    if (quotePrice > 0) {
+      currentPrice = quotePrice;
+    } else if (lastHistoricalClose > 0) {
+      currentPrice = lastHistoricalClose;
+    } else {
+      currentPrice = avgBuyPrice;
+    }
     return {
       id: String(i + 1),
       etfId: def.id,

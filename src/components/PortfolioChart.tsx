@@ -29,7 +29,7 @@ const CustomTooltip = ({
     const value = payload[0]?.value;
     const cost = payload[1]?.value;
     const gain = value - cost;
-    const gainPct = ((gain / cost) * 100).toFixed(2);
+    const gainPct = cost > 0 ? ((gain / cost) * 100).toFixed(2) : '0.00';
     return (
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg p-3 text-sm shadow-lg">
         <p className="text-gray-600 dark:text-slate-300 mb-1">{label}</p>
