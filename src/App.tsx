@@ -7,6 +7,7 @@ import { SettingsPage } from './components/SettingsPage';
 import { MarketDataPage } from './components/MarketDataPage';
 import { CsvImportModal } from './components/CsvImportModal';
 import { ManualBuyModal } from './components/ManualBuyModal';
+import { SaleSimulationModal } from './components/SaleSimulationModal';
 import {
   DEMO_ETFS,
   fetchQuotes,
@@ -61,6 +62,8 @@ function App() {
   const [csvImportLots, setCsvImportLots] = useState<import('./utils/csvParser').CsvLot[] | null>(null);
   const [showManualBuy, setShowManualBuy] = useState(false);
   const [showMarketData, setShowMarketData] = useState(false);
+  const [saleSimulationHolding, setSaleSimulationHolding] = useState<Holding | null>(null);
+  const [showPortfolioSimulation, setShowPortfolioSimulation] = useState(false);
 
   const isDark = settings.theme === 'dark';
 
@@ -366,12 +369,24 @@ function App() {
 
               {/* Holdings Table */}
               <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-slate-700">
-                <div className="mb-4 sm:mb-5">
-                  <h2 className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg">Positionen</h2>
-                  <p className="text-gray-500 dark:text-slate-400 text-xs mt-0.5">Alle ETF-Positionen und Performance</p>
+                <div className="flex items-center justify-between mb-4 sm:mb-5">
+                  <div>
+                    <h2 className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg">Positionen</h2>
+                    <p className="text-gray-500 dark:text-slate-400 text-xs mt-0.5">Alle ETF-Positionen und Performance</p>
+                  </div>
+                  <button
+                    onClick={() => setShowPortfolioSimulation(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-700/50 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Verkaufssimulation
+                  </button>
                 </div>
                 <HoldingsTable
                   holdings={holdings}
+                  onSimulateSale={(h) => setSaleSimulationHolding(h)}
                 />
               </div>
 
@@ -433,6 +448,23 @@ function App() {
           knownEtfs={DEMO_ETFS}
           onConfirm={handleManualBuyConfirm}
           onClose={() => setShowManualBuy(false)}
+        />
+      )}
+
+      {/* Sale simulation modal — single ETF */}
+      {saleSimulationHolding && (
+        <SaleSimulationModal
+          holdings={holdings}
+          initialHolding={saleSimulationHolding}
+          onClose={() => setSaleSimulationHolding(null)}
+        />
+      )}
+
+      {/* Sale simulation modal — portfolio */}
+      {showPortfolioSimulation && !saleSimulationHolding && (
+        <SaleSimulationModal
+          holdings={holdings}
+          onClose={() => setShowPortfolioSimulation(false)}
         />
       )}
     </div>

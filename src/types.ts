@@ -50,3 +50,28 @@ export type Theme = 'dark' | 'light';
 export interface Settings {
   theme: Theme;
 }
+
+/** One lot consumed (fully or partially) in a simulated FIFO sale */
+export interface SimulatedSaleLot {
+  date: string;
+  shares: number;
+  buyPrice: number;
+  salePrice: number;
+  cost: number;
+  proceeds: number;
+  gain: number;
+  gainPct: number;
+}
+
+/** Full result of a simulated FIFO sale for one holding */
+export interface SaleSimulationResult {
+  soldLots: SimulatedSaleLot[];
+  totalShares: number;
+  totalCost: number;
+  totalProceeds: number;
+  totalGain: number;
+  remainingShares: number;
+  remainingValue: number;
+  /** false when the requested share count exceeds available shares */
+  sufficientShares: boolean;
+}
