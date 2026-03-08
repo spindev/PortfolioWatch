@@ -121,6 +121,21 @@ function App() {
 
       const newPortfolioHistory = buildPortfolioHistory(rawHistories, DEMO_ETFS, avgBuyPrices, sharesByTicker, costBasisByTicker, transactionsByTicker);
 
+      // Find the earliest purchase date across all ETFs so the portfolio chart
+      // does not show the period before any actual investment was made.
+      let firstPurchaseDate: string | null = null;
+      Object.values(transactionsByTicker).forEach((txns) => {
+        if (txns.buyLots.length > 0) {
+          const earliest = txns.buyLots[0].date; // already sorted asc
+          if (!firstPurchaseDate || earliest < firstPurchaseDate) {
+            firstPurchaseDate = earliest;
+          }
+        }
+      });
+      const boundedHistory = firstPurchaseDate
+        ? newPortfolioHistory.filter((s) => s.date >= (firstPurchaseDate as string))
+        : newPortfolioHistory;
+
       // Determine the most recent actual trading date across all ETFs
       let latestTradingDate: string | null = null;
       Object.values(rawHistories).forEach((history) => {
@@ -133,7 +148,7 @@ function App() {
       });
 
       setHoldings(newHoldings);
-      setPortfolioHistory(newPortfolioHistory);
+      setPortfolioHistory(boundedHistory);
       setRawQuotes(quotes);
       setRawHistories(rawHistories);
       setLastUpdated(new Date());
