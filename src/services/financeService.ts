@@ -120,6 +120,9 @@ export function applyFifoSales(
       // Round to 8 decimal places to prevent floating-point drift accumulating
       // across repeated partial deductions.
       queue[i].shares = Math.round((queue[i].shares - remaining) * 1e8) / 1e8;
+      // Mark this lot as a partial FIFO remainder so the UI can flag it when
+      // the leftover share count is fractional (a "Bruchstück").
+      queue[i].isPartialLot = true;
       remaining = 0;
     }
   }

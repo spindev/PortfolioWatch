@@ -223,7 +223,7 @@ const LotsTable: React.FC<{ holding: Holding }> = ({ holding }) => {
                 </td>
                 <td className="text-right py-2.5 px-2 text-gray-700 dark:text-slate-300">
                   {formatShares(lot.shares)}
-                  {isFractional(lot.shares) && (
+                  {lot.isPartialLot && isFractional(lot.shares) && (
                     <span title="Bruchstück" className="ml-1 text-amber-500">◆</span>
                   )}
                 </td>
@@ -295,7 +295,7 @@ const LotsCards: React.FC<{ holding: Holding }> = ({ holding }) => {
                 <p className="text-gray-400 dark:text-slate-500 mb-0.5">Anteile</p>
                 <p className="text-gray-700 dark:text-slate-300 font-medium">
                   {formatShares(lot.shares)}
-                  {isFractional(lot.shares) && (
+                  {lot.isPartialLot && isFractional(lot.shares) && (
                     <span title="Bruchstück" className="ml-1 text-amber-500">◆</span>
                   )}
                 </p>

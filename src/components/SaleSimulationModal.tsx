@@ -4,7 +4,6 @@ import {
   formatCurrency,
   formatPercent,
   formatShares,
-  isFractional,
   simulateFifoSale,
   sharesForTargetGain,
 } from '../utils/calculations';
@@ -95,7 +94,7 @@ const FifoTable: React.FC<{ result: SaleSimulationResult; etfLabel?: string }> =
         <tbody>
           {result.soldLots.map((lot, i) => {
             const isPos = lot.gain >= 0;
-            const frac = isFractional(lot.shares);
+            const frac = lot.leavesPartialRemainder === true;
             return (
               <tr
                 key={i}
@@ -154,7 +153,7 @@ const FifoCards: React.FC<{ result: SaleSimulationResult; etfLabel?: string }> =
       </p>
       {result.soldLots.map((lot, i) => {
         const isPos = lot.gain >= 0;
-        const frac = isFractional(lot.shares);
+        const frac = lot.leavesPartialRemainder === true;
         return (
           <div
             key={i}
@@ -506,7 +505,7 @@ const PortfolioSimPanel: React.FC<{ holdings: Holding[] }> = ({ holdings }) => {
               <div className="sm:hidden space-y-2">
                 {allSoldLots.map(({ lot, ticker }, i) => {
                   const isPos = lot.gain >= 0;
-                  const frac = isFractional(lot.shares);
+                  const frac = lot.leavesPartialRemainder === true;
                   return (
                     <div key={i} className="rounded-md bg-gray-50 dark:bg-slate-900/40 border border-gray-200 dark:border-slate-700 p-3">
                       <div className="flex items-center justify-between mb-2">
@@ -560,7 +559,7 @@ const PortfolioSimPanel: React.FC<{ holdings: Holding[] }> = ({ holdings }) => {
                   <tbody>
                     {allSoldLots.map(({ lot, ticker }, i) => {
                       const isPos = lot.gain >= 0;
-                      const frac = isFractional(lot.shares);
+                      const frac = lot.leavesPartialRemainder === true;
                       return (
                         <tr key={i} className="border-b border-gray-100 dark:border-slate-700/50 last:border-0">
                           <td className="py-2.5 px-2 font-medium text-gray-700 dark:text-slate-300">{ticker}</td>
