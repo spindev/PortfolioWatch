@@ -34,10 +34,10 @@ import { Holding, PortfolioSnapshot, PurchaseLot, SaleLot, Settings } from './ty
 const CURRENCY = 'EUR';
 const LOCALE = 'de-DE';
 
-type TimeRange = '1M' | '3M' | '6M' | '1Y' | 'ALL';
+type TimeRange = '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'ALL';
 type Page = 'portfolio' | 'settings';
 
-const TIME_RANGES: TimeRange[] = ['1M', '3M', '6M', '1Y', 'ALL'];
+const TIME_RANGES: TimeRange[] = ['1M', '3M', '6M', '1Y', '3Y', '5Y', 'ALL'];
 
 function App() {
   const [page, setPage] = useState<Page>('portfolio');
