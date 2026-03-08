@@ -297,7 +297,7 @@ export function buildPortfolioHistory(
   const snapshots: PortfolioSnapshot[] = validDates.map((date) => {
     let totalValue = 0;
     let totalCost = 0;
-    activeDefs.forEach((def) => {
+    etfsWithData.forEach((def) => {
       let shares: number;
       let costBasis: number;
 

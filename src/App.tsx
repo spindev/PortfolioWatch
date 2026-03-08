@@ -27,7 +27,6 @@ import {
   calculateTotalGainPercent,
   formatCurrency,
   formatPercent,
-  todayIsoString,
 } from './utils/calculations';
 import { Holding, PortfolioSnapshot, PurchaseLot, SaleLot, Settings } from './types';
 
@@ -243,8 +242,6 @@ function App() {
   const totalGain = calculateTotalGain(holdings);
   const totalGainPercent = calculateTotalGainPercent(holdings);
   const isPositive = totalGain >= 0;
-  const todayStr = todayIsoString();
-  const isNonTradingDay = !!lastTradingDate && lastTradingDate < todayStr;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
@@ -376,9 +373,9 @@ function App() {
                     })} Uhr
                   </span>
                 )}
-                {isNonTradingDay && (
-                  <span className="block mt-0.5 text-amber-500/80 dark:text-amber-400/70">
-                    Kein Handel heute – letzter Kurs vom{' '}
+                {lastTradingDate && (
+                  <span className="block mt-0.5">
+                    Letzter Handelstag:{' '}
                     {new Date(lastTradingDate + 'T12:00:00').toLocaleDateString(LOCALE, {
                       weekday: 'long',
                       day: '2-digit',
