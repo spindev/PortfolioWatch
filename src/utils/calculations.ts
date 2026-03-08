@@ -49,3 +49,8 @@ export function formatPercent(value: number): string {
 export function formatShares(shares: number): string {
   return shares.toLocaleString('de-DE', { maximumFractionDigits: 6 });
 }
+
+/** Returns today's date as a 'YYYY-MM-DD' string (UTC). */
+export function todayIsoString(): string {
+  return new Date().toISOString().split('T')[0];
+}
