@@ -4,6 +4,7 @@ import { StatCard } from './components/StatCard';
 import { PortfolioChart } from './components/PortfolioChart';
 import { HoldingsTable } from './components/HoldingsTable';
 import { SettingsPage } from './components/SettingsPage';
+import { MarketDataPage } from './components/MarketDataPage';
 import { CsvImportModal } from './components/CsvImportModal';
 import { ManualBuyModal } from './components/ManualBuyModal';
 import {
@@ -14,6 +15,7 @@ import {
   buildPortfolioHistory,
   type HistoricalPoint,
   type TickerTransactions,
+  type QuoteResult,
 } from './services/financeService';
 import { getSettings, saveSettings } from './services/settingsService';
 import { getImportedLots, saveImportedLots, getImportedSales, saveImportedSales } from './services/importedLotsService';
@@ -43,6 +45,8 @@ function App() {
 
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [portfolioHistory, setPortfolioHistory] = useState<PortfolioSnapshot[]>([]);
+  const [rawQuotes, setRawQuotes] = useState<QuoteResult[]>([]);
+  const [rawHistories, setRawHistories] = useState<Record<string, HistoricalPoint[]>>({});
 
   const [settings, setSettings] = useState<Settings>(getSettings);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,6 +60,7 @@ function App() {
   const importedSalesRef = useRef<Record<string, SaleLot[]>>(getImportedSales());
   const [csvImportLots, setCsvImportLots] = useState<import('./utils/csvParser').CsvLot[] | null>(null);
   const [showManualBuy, setShowManualBuy] = useState(false);
+  const [showMarketData, setShowMarketData] = useState(false);
 
   const isDark = settings.theme === 'dark';
 
@@ -129,6 +134,8 @@ function App() {
 
       setHoldings(newHoldings);
       setPortfolioHistory(newPortfolioHistory);
+      setRawQuotes(quotes);
+      setRawHistories(rawHistories);
       setLastUpdated(new Date());
       setDataUpdatedAt(updatedAt);
       setLastTradingDate(latestTradingDate);
@@ -393,6 +400,18 @@ function App() {
           onSave={handleSaveSettings}
           onClose={() => setPage('portfolio')}
           onClearPortfolio={handleClearPortfolio}
+          onViewMarketData={() => { setPage('portfolio'); setShowMarketData(true); }}
+        />
+      )}
+
+      {/* Market data overlay */}
+      {showMarketData && (
+        <MarketDataPage
+          etfDefs={DEMO_ETFS}
+          quotes={rawQuotes}
+          histories={rawHistories}
+          updatedAt={dataUpdatedAt}
+          onClose={() => setShowMarketData(false)}
         />
       )}
 
