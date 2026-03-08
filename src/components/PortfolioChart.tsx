@@ -16,7 +16,7 @@ const LOCALE = 'de-DE';
 
 interface PortfolioChartProps {
   data: PortfolioSnapshot[];
-  timeRange: '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'ALL';
+  timeRange: '1M' | '3M' | '6M' | '1Y' | 'ALL';
 }
 
 const CustomTooltip = ({
@@ -51,8 +51,6 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange 
       timeRange === '3M' ? 90 :
       timeRange === '6M' ? 180 :
       timeRange === '1Y' ? 365 :
-      timeRange === '3Y' ? 1095 :
-      timeRange === '5Y' ? 1825 :
       data.length;
     return data.slice(-days);
   }, [data, timeRange]);
@@ -60,7 +58,7 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange 
   const tickInterval = Math.max(1, Math.floor(filtered.length / 6));
 
   // Use a year-aware format for ranges longer than 6 months
-  const useLongFormat = timeRange === '1Y' || timeRange === '3Y' || timeRange === '5Y' || timeRange === 'ALL';
+  const useLongFormat = timeRange === '1Y' || timeRange === 'ALL';
 
   return (
     <div className="h-[220px] sm:h-[320px]">
