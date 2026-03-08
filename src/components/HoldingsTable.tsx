@@ -10,9 +10,10 @@ const ALLOCATION_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'
 
 interface HoldingsTableProps {
   holdings: Holding[];
+  onSimulateSale?: (holding: Holding) => void;
 }
 
-export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
+export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, onSimulateSale }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const totalValue = holdings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0);
 
@@ -97,6 +98,19 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
               {isExpanded && (
                 <div className="px-3 pb-3">
                   <HoldingDetail holding={holding} />
+                  {onSimulateSale && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-600">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onSimulateSale(holding); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-700/50 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Verkaufssimulation
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -117,6 +131,7 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
               <th className="text-right py-3 px-2">G/V</th>
               <th className="text-right py-3 px-2">G/V %</th>
               <th className="text-right py-3 px-2">Allokation</th>
+              {onSimulateSale && <th className="py-3 px-2" />}
             </tr>
           </thead>
           <tbody>
@@ -181,12 +196,26 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings }) => {
                         </span>
                       </div>
                     </td>
+                    {onSimulateSale && (
+                      <td className="py-3 px-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => onSimulateSale(holding)}
+                          title="Verkaufssimulation"
+                          className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-700/50 transition-colors whitespace-nowrap"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                          Simulation
+                        </button>
+                      </td>
+                    )}
                   </tr>
 
                   {/* Inline detail row */}
                   {isExpanded && (
                     <tr className="border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/30">
-                      <td colSpan={8} className="px-4 pb-4">
+                      <td colSpan={onSimulateSale ? 9 : 8} className="px-4 pb-4">
                         <HoldingDetail holding={holding} />
                       </td>
                     </tr>
