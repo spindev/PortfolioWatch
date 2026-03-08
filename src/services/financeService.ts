@@ -266,8 +266,7 @@ export function buildPortfolioHistory(
 
   // Collect the UNION of all trading dates across every ETF with data.
   // Using intersection (old approach) excluded any date where even one ETF had
-  // a gap (common on Gettex where some ETFs skip a day due to low liquidity),
-  // which could leave the chart mostly empty.
+  // a gap, which could leave the chart mostly empty.
   const allDatesSet = new Set<string>();
   etfsWithData.forEach((def) => {
     (etfHistories[def.ticker] ?? []).forEach((p) => allDatesSet.add(p.date));
