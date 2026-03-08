@@ -8,16 +8,17 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { Holding, PurchaseLot } from '../types';
-import { formatCurrency, formatPercent, calculatePriceGainPercent, formatShares } from '../utils/calculations';
+import { Holding, PurchaseLot, DetailTab } from '../types';
+import { formatCurrency, formatPercent, calculatePriceGainPercent, formatShares, isFractional } from '../utils/calculations';
 
 const CURRENCY = 'EUR';
 const LOCALE = 'de-DE';
 
-type DetailTab = 'chart' | 'lots';
-
 interface HoldingDetailProps {
   holding: Holding;
+  /** Controlled active tab – when provided the parent owns the tab state */
+  activeTab?: DetailTab;
+  onTabChange?: (tab: DetailTab) => void;
 }
 
 // ── ETF price chart tooltip ──────────────────────────────────────────────────
@@ -222,6 +223,9 @@ const LotsTable: React.FC<{ holding: Holding }> = ({ holding }) => {
                 </td>
                 <td className="text-right py-2.5 px-2 text-gray-700 dark:text-slate-300">
                   {formatShares(lot.shares)}
+                  {isFractional(lot.shares) && (
+                    <span title="Bruchstück" className="ml-1 text-amber-500">◆</span>
+                  )}
                 </td>
                 <td className="text-right py-2.5 px-2 text-gray-700 dark:text-slate-300">
                   {formatCurrency(lot.buyPrice, CURRENCY, LOCALE)}
@@ -289,7 +293,12 @@ const LotsCards: React.FC<{ holding: Holding }> = ({ holding }) => {
             <div className="grid grid-cols-4 gap-1 text-xs">
               <div>
                 <p className="text-gray-400 dark:text-slate-500 mb-0.5">Anteile</p>
-                <p className="text-gray-700 dark:text-slate-300 font-medium">{formatShares(lot.shares)}</p>
+                <p className="text-gray-700 dark:text-slate-300 font-medium">
+                  {formatShares(lot.shares)}
+                  {isFractional(lot.shares) && (
+                    <span title="Bruchstück" className="ml-1 text-amber-500">◆</span>
+                  )}
+                </p>
               </div>
               <div>
                 <p className="text-gray-400 dark:text-slate-500 mb-0.5">Kaufkurs</p>
@@ -312,8 +321,13 @@ const LotsCards: React.FC<{ holding: Holding }> = ({ holding }) => {
 };
 
 
-export const HoldingDetail: React.FC<HoldingDetailProps> = ({ holding }) => {
-  const [activeTab, setActiveTab] = useState<DetailTab>('chart');
+export const HoldingDetail: React.FC<HoldingDetailProps> = ({ holding, activeTab: controlledTab, onTabChange }) => {
+  const [localTab, setLocalTab] = useState<DetailTab>('chart');
+  const activeTab = controlledTab ?? localTab;
+  const setActiveTab = (tab: DetailTab) => {
+    if (onTabChange) onTabChange(tab);
+    else setLocalTab(tab);
+  };
 
   const tabButton = (tab: DetailTab, label: string) => (
     <button

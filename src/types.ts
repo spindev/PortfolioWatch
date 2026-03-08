@@ -47,6 +47,9 @@ export interface PortfolioSnapshot {
 
 export type Theme = 'dark' | 'light';
 
+/** Active tab in the HoldingDetail inline panel */
+export type DetailTab = 'chart' | 'lots';
+
 export interface Settings {
   theme: Theme;
 }

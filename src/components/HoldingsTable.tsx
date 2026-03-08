@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Holding } from '../types';
+import { Holding, DetailTab } from '../types';
 import { calculateHoldingGain, calculateHoldingGainPercent, formatCurrency, formatPercent, formatShares } from '../utils/calculations';
 import { HoldingDetail } from './HoldingDetail';
 
@@ -15,9 +15,13 @@ interface HoldingsTableProps {
 
 export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, onSimulateSale }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailTabs, setDetailTabs] = useState<Record<string, DetailTab>>({});
   const totalValue = holdings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0);
 
   const toggle = (id: string) => setExpandedId((prev) => (prev === id ? null : id));
+
+  const handleTabChange = (holdingId: string, tab: DetailTab) =>
+    setDetailTabs((prev) => ({ ...prev, [holdingId]: tab }));
 
   return (
     <div>
@@ -97,7 +101,11 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, onSimula
               {/* Inline detail panel */}
               {isExpanded && (
                 <div className="px-3 pb-3">
-                  <HoldingDetail holding={holding} />
+                  <HoldingDetail
+                    holding={holding}
+                    activeTab={detailTabs[holding.id] ?? 'chart'}
+                    onTabChange={(tab) => handleTabChange(holding.id, tab)}
+                  />
                   {onSimulateSale && (
                     <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-600">
                       <button
@@ -216,7 +224,11 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ holdings, onSimula
                   {isExpanded && (
                     <tr className="border-b border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/30">
                       <td colSpan={onSimulateSale ? 9 : 8} className="px-4 pb-4">
-                        <HoldingDetail holding={holding} />
+                        <HoldingDetail
+                          holding={holding}
+                          activeTab={detailTabs[holding.id] ?? 'chart'}
+                          onTabChange={(tab) => handleTabChange(holding.id, tab)}
+                        />
                       </td>
                     </tr>
                   )}

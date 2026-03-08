@@ -55,6 +55,11 @@ export function todayIsoString(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+/** Returns true when `shares` is not a whole number (e.g. 10.35 → true). */
+export function isFractional(shares: number): boolean {
+  return Math.abs(shares - Math.round(shares)) > 1e-9;
+}
+
 /**
  * Simulate a FIFO sale of `sharesToSell` shares at `salePrice`.
  * Processes the oldest buy lots first (caller must pass lots sorted oldest-first).
