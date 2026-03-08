@@ -34,10 +34,10 @@ import { Holding, PortfolioSnapshot, PurchaseLot, SaleLot, Settings } from './ty
 const CURRENCY = 'EUR';
 const LOCALE = 'de-DE';
 
-type TimeRange = '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'ALL';
+type TimeRange = '1M' | '3M' | '6M' | '1Y' | 'ALL';
 type Page = 'portfolio' | 'settings';
 
-const TIME_RANGES: TimeRange[] = ['1M', '3M', '6M', '1Y', '3Y', '5Y', 'ALL'];
+const TIME_RANGES: TimeRange[] = ['1M', '3M', '6M', '1Y', 'ALL'];
 
 function App() {
   const [page, setPage] = useState<Page>('portfolio');
@@ -378,19 +378,6 @@ function App() {
               {/* Footer */}
               <footer className="text-center text-gray-400 dark:text-slate-500 text-xs pb-4">
                 PortfolioWatch — Kurse via Yahoo Finance
-                {dataUpdatedAt && (
-                  <span className="block mt-0.5">
-                    Datenstand:{' '}
-                    {new Date(dataUpdatedAt).toLocaleString(LOCALE, {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      timeZone: 'Europe/Berlin',
-                    })} Uhr
-                  </span>
-                )}
                 {isNonTradingDay && (
                   <span className="block mt-0.5 text-amber-500/80 dark:text-amber-400/70">
                     Kein Handel heute – letzter Kurs vom{' '}
