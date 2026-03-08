@@ -82,6 +82,10 @@ export function simulateFifoSale(
     const cost = sellFromLot * lot.buyPrice;
     const proceeds = sellFromLot * salePrice;
     const gain = proceeds - cost;
+    // A simulated sell leaves a partial remainder when only part of the lot is
+    // consumed AND that leftover is non-integer (a "Bruchstück" to sell first next time).
+    const leftover = lot.shares - sellFromLot;
+    const leavesPartialRemainder = leftover > 1e-9 && isFractional(leftover);
     soldLots.push({
       date: lot.date,
       shares: sellFromLot,
@@ -91,6 +95,7 @@ export function simulateFifoSale(
       proceeds,
       gain,
       gainPct: lot.buyPrice > 0 ? ((salePrice - lot.buyPrice) / lot.buyPrice) * 100 : 0,
+      leavesPartialRemainder,
     });
     remaining = Math.max(0, remaining - lot.shares);
   }
