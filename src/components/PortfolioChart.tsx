@@ -16,7 +16,7 @@ const LOCALE = 'de-DE';
 
 interface PortfolioChartProps {
   data: PortfolioSnapshot[];
-  timeRange: '1M' | '3M' | '6M' | '1Y' | 'ALL';
+  timeRange: '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'ALL';
 }
 
 const CustomTooltip = ({
@@ -46,11 +46,21 @@ const CustomTooltip = ({
 
 export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange }) => {
   const filtered = React.useMemo(() => {
-    const days = timeRange === '1M' ? 30 : timeRange === '3M' ? 90 : timeRange === '6M' ? 180 : timeRange === '1Y' ? 365 : data.length;
+    const days =
+      timeRange === '1M' ? 30 :
+      timeRange === '3M' ? 90 :
+      timeRange === '6M' ? 180 :
+      timeRange === '1Y' ? 365 :
+      timeRange === '3Y' ? 1095 :
+      timeRange === '5Y' ? 1825 :
+      data.length;
     return data.slice(-days);
   }, [data, timeRange]);
 
   const tickInterval = Math.max(1, Math.floor(filtered.length / 6));
+
+  // Use a year-aware format for ranges longer than 6 months
+  const useLongFormat = timeRange === '1Y' || timeRange === '3Y' || timeRange === '5Y' || timeRange === 'ALL';
 
   return (
     <div className="h-[220px] sm:h-[320px]">
@@ -74,9 +84,12 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange 
           axisLine={false}
           interval={tickInterval}
           tickFormatter={(val) => {
-            const [_year, month, day] = (val as string).split('-');
-            return `${parseInt(day, 10)}.${parseInt(month, 10)}.`;
-          }}
+              if (useLongFormat) {
+                return new Date(val as string).toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+              }
+              const [_year, month, day] = (val as string).split('-');
+              return `${parseInt(day, 10)}.${parseInt(month, 10)}.`;
+            }}
         />
         <YAxis
           tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}

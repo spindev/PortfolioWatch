@@ -60,8 +60,8 @@ async function fetchTicker(ticker) {
   const price = validCloses[validCloses.length - 1] ?? 0;
   const currency = quoteResult.meta?.currency ?? 'USD';
 
-  // Fetch 1 year of daily historical prices
-  const histUrl = `${YF_BASE}/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y`;
+  // Fetch 5 years of daily historical prices
+  const histUrl = `${YF_BASE}/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5y`;
   const histRes = await fetchWithTimeout(histUrl);
   if (!histRes.ok) {
     throw new Error(`Historical fetch failed for ${ticker}: HTTP ${histRes.status}`);

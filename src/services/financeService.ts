@@ -168,7 +168,7 @@ export async function fetchQuotes(tickers: string[]): Promise<QuotesData> {
 }
 
 /**
- * Fetch 1-year daily historical prices for a single ticker.
+ * Fetch 5-year daily historical prices for a single ticker.
  *
  * - Development: live from Yahoo Finance via the Vite dev proxy.
  * - Production: reads from `data/historical-{ticker}.json` — a static file
@@ -176,7 +176,7 @@ export async function fetchQuotes(tickers: string[]): Promise<QuotesData> {
  */
 export async function fetchHistorical(ticker: string): Promise<HistoricalPoint[]> {
   if (import.meta.env.DEV) {
-    const path = `/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1y`;
+    const path = `/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5y`;
     const res = await fetchWithTimeout(`${YF_DEV_PROXY}${path}`, {
       headers: { Accept: 'application/json' },
     });

@@ -50,11 +50,30 @@ const ChartTooltip = ({
 };
 
 // ── ETF price area chart ─────────────────────────────────────────────────────
+type EtfTimeRange = '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'MAX';
+const ETF_TIME_RANGES: EtfTimeRange[] = ['1M', '3M', '6M', '1Y', '3Y', '5Y', 'MAX'];
+
 const EtfChart: React.FC<{ holding: Holding; compact?: boolean }> = ({ holding, compact = false }) => {
-  // Limit to last 12 months for a readable x-axis
-  const cutoff = new Date(new Date().setFullYear(new Date().getFullYear() - 1));
-  const data = holding.history.filter((d) => new Date(d.date) >= cutoff);
-  // Show ~6 ticks (one every ~2 months) regardless of data density
+  const [timeRange, setTimeRange] = useState<EtfTimeRange>('1Y');
+
+  const data = React.useMemo(() => {
+    if (timeRange === 'MAX') return holding.history;
+    const days =
+      timeRange === '1M' ? 30 :
+      timeRange === '3M' ? 90 :
+      timeRange === '6M' ? 180 :
+      timeRange === '1Y' ? 365 :
+      timeRange === '3Y' ? 1095 :
+      1825; // 5Y
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    return holding.history.filter((d) => new Date(d.date) >= cutoff);
+  }, [holding.history, timeRange]);
+
+  // Use a year-aware format for ranges longer than 6 months
+  const useLongFormat = timeRange === '1Y' || timeRange === '3Y' || timeRange === '5Y' || timeRange === 'MAX';
+
+  // Show ~6 ticks regardless of data density
   const tickInterval = Math.max(1, Math.floor(data.length / 6));
 
   if (data.length === 0) {
@@ -66,47 +85,68 @@ const EtfChart: React.FC<{ holding: Holding; compact?: boolean }> = ({ holding, 
   }
 
   return (
-    <div className={compact ? 'h-[180px]' : 'h-[200px] sm:h-[240px]'}>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 8, left: compact ? 0 : 10, bottom: 0 }}>
-          <defs>
-            <linearGradient id={`etfGradient-${holding.id}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
-          <XAxis
-            dataKey="date"
-            tick={{ fill: 'var(--chart-tick)', fontSize: compact ? 10 : 11 }}
-            tickLine={false}
-            axisLine={false}
-            interval={tickInterval}
-            tickFormatter={(val) => {
-              const d = new Date(val);
-              return d.toLocaleDateString(LOCALE, { month: 'short', year: '2-digit' });
-            }}
-          />
-          <YAxis
-            tick={{ fill: 'var(--chart-tick)', fontSize: compact ? 10 : 11 }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(val) => formatCurrency(val, CURRENCY, LOCALE)}
-            domain={['auto', 'auto']}
-            width={compact ? 58 : 70}
-          />
-          <Tooltip content={<ChartTooltip />} />
-          <Area
-            type="monotone"
-            dataKey="close"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            fill={`url(#etfGradient-${holding.id})`}
-            name="Kurs"
-            isAnimationActive={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+    <div>
+      {/* Time range selector */}
+      <div className="flex gap-1 mb-3 flex-wrap">
+        {ETF_TIME_RANGES.map((r) => (
+          <button
+            key={r}
+            onClick={() => setTimeRange(r)}
+            className={`px-2 py-1 text-xs rounded-md transition-colors ${
+              timeRange === r
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+      <div className={compact ? 'h-[180px]' : 'h-[200px] sm:h-[240px]'}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 10, right: 8, left: compact ? 0 : 10, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`etfGradient-${holding.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: 'var(--chart-tick)', fontSize: compact ? 10 : 11 }}
+              tickLine={false}
+              axisLine={false}
+              interval={tickInterval}
+              tickFormatter={(val) => {
+                if (useLongFormat) {
+                  return new Date(val as string).toLocaleDateString(LOCALE, { month: 'short', year: '2-digit' });
+                }
+                const d = new Date(val as string);
+                return d.toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit' });
+              }}
+            />
+            <YAxis
+              tick={{ fill: 'var(--chart-tick)', fontSize: compact ? 10 : 11 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(val) => formatCurrency(val, CURRENCY, LOCALE)}
+              domain={['auto', 'auto']}
+              width={compact ? 58 : 70}
+            />
+            <Tooltip content={<ChartTooltip />} />
+            <Area
+              type="monotone"
+              dataKey="close"
+              stroke="#3b82f6"
+              strokeWidth={2}
+              fill={`url(#etfGradient-${holding.id})`}
+              name="Kurs"
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
