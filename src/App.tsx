@@ -25,6 +25,7 @@ import {
   calculateTotalGainPercent,
   formatCurrency,
   formatPercent,
+  todayIsoString,
 } from './utils/calculations';
 import { Holding, PortfolioSnapshot, PurchaseLot, SaleLot, Settings } from './types';
 
@@ -48,6 +49,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [dataUpdatedAt, setDataUpdatedAt] = useState<string | null>(null);
+  const [lastTradingDate, setLastTradingDate] = useState<string | null>(null);
 
   // CSV import state
   const importedLotsRef = useRef<Record<string, PurchaseLot[]>>(getImportedLots());
@@ -114,10 +116,22 @@ function App() {
 
       const newPortfolioHistory = buildPortfolioHistory(rawHistories, DEMO_ETFS, avgBuyPrices, sharesByTicker, costBasisByTicker, transactionsByTicker);
 
+      // Determine the most recent actual trading date across all ETFs
+      let latestTradingDate: string | null = null;
+      Object.values(rawHistories).forEach((history) => {
+        if (history.length > 0) {
+          const lastDate = history[history.length - 1].date;
+          if (!latestTradingDate || lastDate > latestTradingDate) {
+            latestTradingDate = lastDate;
+          }
+        }
+      });
+
       setHoldings(newHoldings);
       setPortfolioHistory(newPortfolioHistory);
       setLastUpdated(new Date());
       setDataUpdatedAt(updatedAt);
+      setLastTradingDate(latestTradingDate);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Daten konnten nicht geladen werden');
     } finally {
@@ -222,6 +236,8 @@ function App() {
   const totalGain = calculateTotalGain(holdings);
   const totalGainPercent = calculateTotalGainPercent(holdings);
   const isPositive = totalGain >= 0;
+  const todayStr = todayIsoString();
+  const isNonTradingDay = !!lastTradingDate && lastTradingDate < todayStr;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
@@ -351,6 +367,17 @@ function App() {
                       minute: '2-digit',
                       timeZone: 'Europe/Berlin',
                     })} Uhr
+                  </span>
+                )}
+                {isNonTradingDay && (
+                  <span className="block mt-0.5 text-amber-500/80 dark:text-amber-400/70">
+                    Kein Handel heute – letzter Kurs vom{' '}
+                    {new Date(lastTradingDate + 'T12:00:00').toLocaleDateString(LOCALE, {
+                      weekday: 'long',
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                    })}
                   </span>
                 )}
               </footer>

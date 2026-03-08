@@ -1,5 +1,6 @@
 import { Holding, PortfolioSnapshot, PurchaseLot, SaleLot } from '../types';
 import etfsConfig from '../etfs.json';
+import { todayIsoString } from '../utils/calculations';
 
 // ETF definitions — the single source of truth shared with scripts/fetch-finance-data.mjs.
 export interface DemoEtfDef {
@@ -293,7 +294,7 @@ export function buildPortfolioHistory(
     etfsWithData.every((def) => filledPriceMaps[def.ticker][date] != null),
   );
 
-  return validDates.map((date) => {
+  const snapshots: PortfolioSnapshot[] = validDates.map((date) => {
     let totalValue = 0;
     let totalCost = 0;
     activeDefs.forEach((def) => {
@@ -327,6 +328,17 @@ export function buildPortfolioHistory(
       totalCost: Math.round(totalCost * 100) / 100,
     };
   });
+
+  // Extend the chart to today when markets are closed (weekends, public holidays).
+  // This prevents the chart from ending abruptly on the last trading day and lets
+  // the current portfolio value stay visible even on non-trading days.
+  const today = todayIsoString();
+  if (snapshots.length > 0 && snapshots[snapshots.length - 1].date < today) {
+    const last = snapshots[snapshots.length - 1];
+    snapshots.push({ date: today, totalValue: last.totalValue, totalCost: last.totalCost });
+  }
+
+  return snapshots;
 }
 
 /** Build Holding objects from ETF definitions + current quotes + avg buy prices */
