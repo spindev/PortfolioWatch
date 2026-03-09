@@ -4,6 +4,7 @@ import {
   formatCurrency,
   formatPercent,
   formatShares,
+  parseGermanNumber,
   simulateFifoSale,
   sharesForTargetGain,
 } from '../utils/calculations';
@@ -248,7 +249,7 @@ const EtfSimPanel: React.FC<EtfSimPanelProps> = ({
   onInputModeChange,
   onRawValueChange,
 }) => {
-  const parsedValue = parseFloat(rawValue.replace(',', '.'));
+  const parsedValue = parseGermanNumber(rawValue);
   const isValid = !isNaN(parsedValue) && parsedValue > 0;
 
   const sharesToSell = useMemo(() => {
@@ -373,7 +374,7 @@ const EtfSimPanel: React.FC<EtfSimPanelProps> = ({
 const PortfolioSimPanel: React.FC<{ holdings: Holding[] }> = ({ holdings }) => {
   const [globalTarget, setGlobalTarget] = useState<string>('');
 
-  const parsedTarget = parseFloat(globalTarget.replace(',', '.'));
+  const parsedTarget = parseGermanNumber(globalTarget);
   const validTarget = !isNaN(parsedTarget) && parsedTarget > 0;
 
   /** Per-ETF gain targets derived from global target (proportional to each ETF's max unrealised gain) */

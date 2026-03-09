@@ -50,6 +50,18 @@ export function formatShares(shares: number): string {
   return shares.toLocaleString('de-DE', { maximumFractionDigits: 6 });
 }
 
+/**
+ * Parse a German-formatted number string where periods are thousands separators
+ * and a comma is the decimal separator (e.g. "1.234,56" → 1234.56).
+ * Also accepts plain integers or comma-decimal numbers without thousands separators
+ * ("10" → 10, "10,5" → 10.5). Note: English-style decimal periods ("10.5") will be
+ * misinterpreted as thousands separators ("10.5" → 105) — always use comma for decimals.
+ * Returns NaN for empty or non-numeric input; callers must check with isNaN().
+ */
+export function parseGermanNumber(s: string): number {
+  return parseFloat(s.replace(/\./g, '').replace(',', '.'));
+}
+
 /** Returns today's date as a 'YYYY-MM-DD' string (UTC). */
 export function todayIsoString(): string {
   return new Date().toISOString().split('T')[0];
