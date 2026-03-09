@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DemoEtfDef } from '../services/financeService';
 import { PurchaseLot } from '../types';
+import { parseGermanNumber } from '../utils/calculations';
 
 interface ManualBuyModalProps {
   knownEtfs: DemoEtfDef[];
@@ -23,9 +24,9 @@ export const ManualBuyModal: React.FC<ManualBuyModalProps> = ({ knownEtfs, onCon
     const errs: string[] = [];
     if (!isin) errs.push('Bitte ein ETF auswählen.');
     if (!date) errs.push('Bitte ein Datum angeben.');
-    const parsedPrice = parseFloat(price.replace(',', '.'));
+    const parsedPrice = parseGermanNumber(price);
     if (isNaN(parsedPrice) || parsedPrice <= 0) errs.push('Kurs muss eine positive Zahl sein.');
-    const parsedShares = parseFloat(shares.replace(',', '.'));
+    const parsedShares = parseGermanNumber(shares);
     if (isNaN(parsedShares) || parsedShares <= 0) errs.push('Anteile müssen eine positive Zahl sein.');
     setErrors(errs);
     return errs.length === 0;
@@ -35,8 +36,8 @@ export const ManualBuyModal: React.FC<ManualBuyModalProps> = ({ knownEtfs, onCon
     if (!validate()) return;
     const lot: PurchaseLot = {
       date,
-      buyPrice: parseFloat(price.replace(',', '.')),
-      shares: parseFloat(shares.replace(',', '.')),
+      buyPrice: parseGermanNumber(price),
+      shares: parseGermanNumber(shares),
     };
     onConfirm(isin, lot);
   };
