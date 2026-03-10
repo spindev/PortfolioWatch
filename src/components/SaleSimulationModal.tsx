@@ -639,6 +639,8 @@ interface EtfPanelState {
   rawValue: string;
 }
 
+const DEFAULT_ETF_PANEL_STATE: EtfPanelState = { inputMode: 'gain', rawValue: '' };
+
 export const SaleSimulationModal: React.FC<SaleSimulationModalProps> = ({
   holdings,
   initialHolding,
@@ -652,15 +654,12 @@ export const SaleSimulationModal: React.FC<SaleSimulationModalProps> = ({
   const [etfPanelStates, setEtfPanelStates] = useState<Record<string, EtfPanelState>>({});
 
   const selectedHolding = holdings.find((h) => h.id === selectedHoldingId) ?? holdings[0];
-  const currentPanelState: EtfPanelState = etfPanelStates[selectedHoldingId] ?? {
-    inputMode: 'gain',
-    rawValue: '',
-  };
+  const currentPanelState: EtfPanelState = etfPanelStates[selectedHoldingId] ?? DEFAULT_ETF_PANEL_STATE;
 
   const updatePanelState = (patch: Partial<EtfPanelState>) =>
     setEtfPanelStates((prev) => ({
       ...prev,
-      [selectedHoldingId]: { ...currentPanelState, ...patch },
+      [selectedHoldingId]: { ...(prev[selectedHoldingId] ?? DEFAULT_ETF_PANEL_STATE), ...patch },
     }));
 
   return (
