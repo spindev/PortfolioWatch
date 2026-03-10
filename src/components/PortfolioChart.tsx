@@ -26,8 +26,8 @@ const CustomTooltip = ({
   active?: any; payload?: any[]; label?: string;
 }) => {
   if (active && payload && payload.length) {
-    const value = payload[0]?.value;
-    const cost = payload[1]?.value;
+    const cost = payload[0]?.value;
+    const value = payload[1]?.value;
     const gain = value - cost;
     const gainPct = cost > 0 ? ((gain / cost) * 100).toFixed(2) : '0.00';
     return (
