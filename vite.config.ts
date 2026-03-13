@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/PortfolioWatch/',
+  base: process.env['VITE_BASE'] ?? '/PortfolioWatch/',
   server: {
     proxy: {
       '/api/yf': {
