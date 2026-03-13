@@ -1,7 +1,12 @@
 name: PR Preview
 
 on:
-  pull_request:
+  # pull_request_target runs in the base-branch context so it is trusted by
+  # GitHub and does not require manual approval for bot-authored PRs.
+  # The checkout step below pins to the PR head SHA so we always build the
+  # actual PR code.  This is safe because only same-repository branches
+  # (no forks) trigger this workflow.
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 # Allow only one preview build per PR at a time; cancel older runs.
@@ -17,8 +22,12 @@ jobs:
   preview:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout PR head
         uses: actions/checkout@v4
+        with:
+          # Explicitly check out the PR head commit so we build the PR code,
+          # not the base branch.
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4

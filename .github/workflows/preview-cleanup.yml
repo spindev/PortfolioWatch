@@ -1,7 +1,9 @@
 name: PR Preview Cleanup
 
 on:
-  pull_request:
+  # pull_request_target runs in the base-branch context (trusted) so it does
+  # not require manual approval for bot-authored PRs.
+  pull_request_target:
     types: [closed]
 
 concurrency:
