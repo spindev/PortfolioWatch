@@ -90,16 +90,21 @@ jobs:
             const headSha  = process.env.HEAD_SHA;
             const previewUrl = `https://spindev.github.io/PortfolioWatch/pr-preview/pr-${prNumber}/`;
             const marker = '<!-- portfoliowatch-pr-preview -->';
-            const body = `${marker}
-## 🔍 Vorschau-Deployment
-
-| | |
-|---|---|
-| **Status** | ✅ Bereit |
-| **Vorschau** | ${previewUrl} |
-| **Commit** | ${headSha} |
-
-> Die Vorschau wird bei jedem Push auf diesen Branch aktualisiert und nach dem Schließen des Pull Requests automatisch entfernt.`;
+            const table = [
+              '| | |',
+              '|---|---|',
+              `| **Status** | ✅ Bereit |`,
+              `| **Vorschau** | ${previewUrl} |`,
+              `| **Commit** | ${headSha} |`,
+            ].join('\n');
+            const body = [
+              marker,
+              '## 🔍 Vorschau-Deployment',
+              '',
+              table,
+              '',
+              '> Die Vorschau wird bei jedem Push auf diesen Branch aktualisiert und nach dem Schließen des Pull Requests automatisch entfernt.',
+            ].join('\n');
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
