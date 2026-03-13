@@ -1,26 +1,17 @@
 name: PR Preview
 
 on:
-  # pull_request_target runs in the base-branch context (trusted by GitHub,
-  # no manual approval gate for bot-authored PRs).  It only takes effect once
-  # this workflow file is merged to the base branch; until then use the
-  # workflow_dispatch trigger below as a manual fallback.
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  # push fires on every commit pushed to a branch (reads the workflow file from
+  # that branch itself — no base-branch lookup, no bot-approval gate).
+  # Pushes to main and gh-pages are excluded; those have their own workflows.
+  push:
+    branches-ignore:
+      - main
+      - gh-pages
 
-  # Manual fallback: allows the repo owner to trigger a preview build from
-  # the Actions tab for any PR, e.g. while this workflow is still in a branch
-  # and pull_request_target hasn't taken effect on main yet.
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'PR number to build the preview for'
-        required: true
-        type: string
-
-# Allow only one preview build per PR at a time; cancel older runs.
+# Cancel any in-progress run for the same branch when a new push arrives.
 concurrency:
-  group: pr-preview-${{ github.event.pull_request.number || inputs.pr_number }}
+  group: pr-preview-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -30,48 +21,69 @@ permissions:
 jobs:
   preview:
     runs-on: ubuntu-latest
-    env:
-      # Works for both pull_request_target (event context) and workflow_dispatch (input).
-      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
-      # For pull_request_target the head SHA is in the event; for workflow_dispatch
-      # github.sha is the latest commit on the selected branch — both are correct.
-      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Checkout PR head
-        uses: actions/checkout@v4
+      # Look up the open PR for the branch that was just pushed.
+      # If no open PR exists the remaining steps are skipped automatically.
+      - name: Find open PR for this branch
+        id: pr
+        uses: actions/github-script@v7
         with:
-          ref: ${{ env.HEAD_SHA }}
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${branch}`,
+              state: 'open',
+            });
+            if (prs.length === 0) {
+              core.info(`No open PR found for branch '${branch}' – skipping preview.`);
+              core.setOutput('has_pr', 'false');
+              return;
+            }
+            core.setOutput('has_pr', 'true');
+            core.setOutput('pr_number', String(prs[0].number));
+
+      - name: Checkout
+        if: steps.pr.outputs.has_pr == 'true'
+        uses: actions/checkout@v4
 
       - name: Setup Node
+        if: steps.pr.outputs.has_pr == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
+        if: steps.pr.outputs.has_pr == 'true'
         run: npm ci
 
       - name: Fetch finance data
+        if: steps.pr.outputs.has_pr == 'true'
         run: node scripts/fetch-finance-data.mjs
 
       - name: Build with PR-specific base path
+        if: steps.pr.outputs.has_pr == 'true'
         env:
-          VITE_BASE: /PortfolioWatch/pr-preview/pr-${{ env.PR_NUMBER }}/
+          VITE_BASE: /PortfolioWatch/pr-preview/pr-${{ steps.pr.outputs.pr_number }}/
         run: npm run build
 
       - name: Deploy preview to gh-pages branch
+        if: steps.pr.outputs.has_pr == 'true'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
           folder: dist
-          target-folder: pr-preview/pr-${{ env.PR_NUMBER }}
+          target-folder: pr-preview/pr-${{ steps.pr.outputs.pr_number }}
           clean: true
 
       - name: Comment preview URL on PR
+        if: steps.pr.outputs.has_pr == 'true'
         uses: actions/github-script@v7
         env:
-          PR_NUMBER: ${{ env.PR_NUMBER }}
-          HEAD_SHA: ${{ env.HEAD_SHA }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+          HEAD_SHA: ${{ github.sha }}
         with:
           script: |
             const prNumber = parseInt(process.env.PR_NUMBER);
