@@ -1,4 +1,4 @@
-import { Holding, PurchaseLot, SaleSimulationResult, SimulatedSaleLot } from '../types';
+import { Holding, PortfolioSnapshot, PurchaseLot, SaleSimulationResult, SimulatedSaleLot } from '../types';
 
 export function calculateTotalValue(holdings: Holding[]): number {
   return holdings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0);
@@ -169,4 +169,77 @@ export function sharesForTargetGain(
 
   // Target not fully achievable — return all available shares
   return totalShares;
+}
+
+/** A single data point in a savings/growth forecast. */
+export interface ForecastDataPoint {
+  /** Number of complete years from today (0 = current state). */
+  year: number;
+  /** Human-readable label, e.g. "Heute" or "Jahr 10". */
+  label: string;
+  /** Projected total portfolio value. */
+  totalValue: number;
+  /** Total capital invested (initial + all monthly contributions). */
+  totalCost: number;
+}
+
+/**
+ * Build a year-by-year forecast of portfolio value.
+ *
+ * Starting from `initialValue` (current portfolio value) with an initial cost
+ * basis of `initialCost`, a fixed `monthlyInvestment` is added each month and
+ * the whole balance grows at `annualReturnRate` (e.g. 0.07 for 7 % p.a.).
+ * Returns one data point per year from year 0 (today) through `years`.
+ */
+export function buildForecastData(
+  initialValue: number,
+  initialCost: number,
+  monthlyInvestment: number,
+  years: number,
+  annualReturnRate: number,
+): ForecastDataPoint[] {
+  const monthlyRate = Math.pow(1 + annualReturnRate, 1 / 12) - 1;
+  const points: ForecastDataPoint[] = [];
+
+  let value = initialValue;
+  let cost = initialCost;
+
+  // Year 0: current portfolio state
+  points.push({ year: 0, label: 'Heute', totalValue: value, totalCost: cost });
+
+  for (let y = 1; y <= years; y++) {
+    for (let m = 0; m < 12; m++) {
+      value = (value + monthlyInvestment) * (1 + monthlyRate);
+      cost += monthlyInvestment;
+    }
+    points.push({ year: y, label: `Jahr ${y}`, totalValue: value, totalCost: cost });
+  }
+
+  return points;
+}
+
+/**
+ * Estimate the annualised return rate from a portfolio's snapshot history.
+ * Falls back to 0.07 (7 % p.a.) when the history is too short or when the
+ * calculated rate is outside a plausible range.
+ */
+export function estimateAnnualReturn(portfolioHistory: PortfolioSnapshot[]): number {
+  if (portfolioHistory.length < 2) return 0.07;
+  const first = portfolioHistory[0];
+  const last = portfolioHistory[portfolioHistory.length - 1];
+  if (first.totalCost <= 0 || first.totalValue <= 0) return 0.07;
+
+  const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+  const years =
+    (new Date(last.date).getTime() - new Date(first.date).getTime()) / msPerYear;
+  if (years < 0.25) return 0.07; // less than 3 months — not representative
+
+  // Simple total-return CAGR: treat the first snapshot value as the starting
+  // capital and the last value as the ending capital (ignores interim cash flows,
+  // which gives a conservative estimate consistent with buy-and-hold).
+  const totalReturn = last.totalValue / first.totalValue - 1;
+  const annualReturn = Math.pow(1 + totalReturn, 1 / years) - 1;
+
+  // Clamp to a reasonable range: -30 % … +50 %
+  return Math.max(-0.3, Math.min(0.5, annualReturn));
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, Theme } from '../types';
+import { parseGermanNumber } from '../utils/calculations';
 
 interface SettingsPageProps {
   settings: Settings;
@@ -7,13 +8,36 @@ interface SettingsPageProps {
   onClose: () => void;
   onClearPortfolio: () => void;
   onViewMarketData: () => void;
+  onViewForecast: () => void;
 }
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, onClose, onClearPortfolio, onViewMarketData }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, onClose, onClearPortfolio, onViewMarketData, onViewForecast }) => {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [monthlyRaw, setMonthlyRaw] = useState(
+    settings.monthlyInvestment.toLocaleString('de-DE', { maximumFractionDigits: 2 }),
+  );
+  const [yearsRaw, setYearsRaw] = useState(String(settings.forecastYears));
 
   const handleTheme = (theme: Theme) => {
     onSave({ ...settings, theme });
+  };
+
+  const handleMonthlyBlur = () => {
+    const val = parseGermanNumber(monthlyRaw);
+    if (!isNaN(val) && val > 0) {
+      onSave({ ...settings, monthlyInvestment: val });
+    } else {
+      setMonthlyRaw(settings.monthlyInvestment.toLocaleString('de-DE', { maximumFractionDigits: 2 }));
+    }
+  };
+
+  const handleYearsBlur = () => {
+    const val = parseInt(yearsRaw, 10);
+    if (!isNaN(val) && val > 0 && val <= 100) {
+      onSave({ ...settings, forecastYears: val });
+    } else {
+      setYearsRaw(String(settings.forecastYears));
+    }
   };
 
   const handleClearClick = () => {
@@ -96,6 +120,48 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Kursdaten anzeigen
+          </button>
+        </div>
+
+        {/* Forecast settings */}
+        <div className="space-y-2">
+          <p className="text-gray-700 dark:text-slate-300 text-sm font-medium">Prognose</p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <label className="text-gray-600 dark:text-slate-400 text-xs flex-1">
+                Monatlicher Sparbetrag (€)
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={monthlyRaw}
+                onChange={(e) => setMonthlyRaw(e.target.value)}
+                onBlur={handleMonthlyBlur}
+                className="w-24 px-2 py-1 text-xs rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-gray-600 dark:text-slate-400 text-xs flex-1">
+                Prognosezeitraum (Jahre)
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={yearsRaw}
+                onChange={(e) => setYearsRaw(e.target.value)}
+                onBlur={handleYearsBlur}
+                className="w-24 px-2 py-1 text-xs rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <button
+            onClick={onViewForecast}
+            className="w-full py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            Prognose anzeigen
           </button>
         </div>
 

@@ -5,6 +5,7 @@ import { PortfolioChart } from './components/PortfolioChart';
 import { HoldingsTable } from './components/HoldingsTable';
 import { SettingsPage } from './components/SettingsPage';
 import { MarketDataPage } from './components/MarketDataPage';
+import { ForecastPage } from './components/ForecastPage';
 import { CsvImportModal } from './components/CsvImportModal';
 import { ManualBuyModal } from './components/ManualBuyModal';
 import { SaleSimulationModal } from './components/SaleSimulationModal';
@@ -62,6 +63,7 @@ function App() {
   const [csvImportLots, setCsvImportLots] = useState<import('./utils/csvParser').CsvLot[] | null>(null);
   const [showManualBuy, setShowManualBuy] = useState(false);
   const [showMarketData, setShowMarketData] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
   const [saleSimulationHolding, setSaleSimulationHolding] = useState<Holding | null>(null);
   const [showPortfolioSimulation, setShowPortfolioSimulation] = useState(false);
 
@@ -348,7 +350,17 @@ function App() {
                     <h2 className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg">Portfolio-Entwicklung</h2>
                     <p className="text-gray-500 dark:text-slate-400 text-xs mt-0.5">Wert vs. Kostenbasis über die Zeit</p>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setShowForecast(true)}
+                      className="flex items-center gap-1 px-2 sm:px-3 py-1 text-xs rounded-md transition-colors text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700/50 mr-1"
+                      title="Prognose anzeigen"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      <span className="hidden sm:inline">Prognose</span>
+                    </button>
                     {TIME_RANGES.map((range) => (
                       <button
                         key={range}
@@ -418,6 +430,7 @@ function App() {
           onClose={() => setPage('portfolio')}
           onClearPortfolio={handleClearPortfolio}
           onViewMarketData={() => { setPage('portfolio'); setShowMarketData(true); }}
+          onViewForecast={() => { setPage('portfolio'); setShowForecast(true); }}
         />
       )}
 
@@ -429,6 +442,18 @@ function App() {
           histories={rawHistories}
           updatedAt={dataUpdatedAt}
           onClose={() => setShowMarketData(false)}
+        />
+      )}
+
+      {/* Forecast overlay */}
+      {showForecast && (
+        <ForecastPage
+          currentValue={totalValue}
+          currentCost={totalCost}
+          portfolioHistory={portfolioHistory}
+          monthlyInvestment={settings.monthlyInvestment}
+          forecastYears={settings.forecastYears}
+          onClose={() => setShowForecast(false)}
         />
       )}
 

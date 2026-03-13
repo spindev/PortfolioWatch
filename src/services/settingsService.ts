@@ -1,7 +1,7 @@
 import { Settings } from '../types';
 
 const STORAGE_KEY = 'portfoliowatch_settings';
-const DEFAULT_SETTINGS: Settings = { theme: 'dark' };
+const DEFAULT_SETTINGS: Settings = { theme: 'dark', monthlyInvestment: 150, forecastYears: 30 };
 
 export function getSettings(): Settings {
   try {
@@ -11,7 +11,15 @@ export function getSettings(): Settings {
     const theme = parsed.theme === 'dark' || parsed.theme === 'light'
       ? parsed.theme
       : DEFAULT_SETTINGS.theme;
-    return { theme };
+    const monthlyInvestment =
+      typeof parsed.monthlyInvestment === 'number' && parsed.monthlyInvestment > 0
+        ? parsed.monthlyInvestment
+        : DEFAULT_SETTINGS.monthlyInvestment;
+    const forecastYears =
+      typeof parsed.forecastYears === 'number' && parsed.forecastYears > 0
+        ? parsed.forecastYears
+        : DEFAULT_SETTINGS.forecastYears;
+    return { theme, monthlyInvestment, forecastYears };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }

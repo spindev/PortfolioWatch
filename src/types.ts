@@ -58,6 +58,10 @@ export type DetailTab = 'chart' | 'lots';
 
 export interface Settings {
   theme: Theme;
+  /** Monthly savings contribution for the forecast feature (€). Default: 150 */
+  monthlyInvestment: number;
+  /** Forecast horizon in years. Default: 30 */
+  forecastYears: number;
 }
 
 /** One lot consumed (fully or partially) in a simulated FIFO sale */
