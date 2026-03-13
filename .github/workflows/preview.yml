@@ -91,15 +91,15 @@ jobs:
             const previewUrl = `https://spindev.github.io/PortfolioWatch/pr-preview/pr-${prNumber}/`;
             const marker = '<!-- portfoliowatch-pr-preview -->';
             const body = `${marker}
-            ## 🔍 Vorschau-Deployment
+## 🔍 Vorschau-Deployment
 
-            | | |
-            |---|---|
-            | **Status** | ✅ Bereit |
-            | **Vorschau** | ${previewUrl} |
-            | **Commit** | ${headSha} |
+| | |
+|---|---|
+| **Status** | ✅ Bereit |
+| **Vorschau** | ${previewUrl} |
+| **Commit** | ${headSha} |
 
-            > Die Vorschau wird bei jedem Push auf diesen Branch aktualisiert und nach dem Schließen des Pull Requests automatisch entfernt.`;
+> Die Vorschau wird bei jedem Push auf diesen Branch aktualisiert und nach dem Schließen des Pull Requests automatisch entfernt.`;
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -107,20 +107,20 @@ jobs:
               issue_number: prNumber,
             });
 
+            // Delete existing preview comment so the new one appears as fresh
+            // activity (GitHub does not notify for silent comment updates).
             const existing = comments.find(c => c.body && c.body.includes(marker));
-
             if (existing) {
-              await github.rest.issues.updateComment({
+              await github.rest.issues.deleteComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body,
               });
             }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });
