@@ -122,9 +122,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onSave, on
         {/* Forecast settings */}
         <div className="space-y-3">
           <p className="text-gray-700 dark:text-slate-300 text-sm font-medium">Prognose</p>
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
             <label className="block">
-              <span className="text-gray-600 dark:text-slate-400 text-xs">Monatliche Sparrate (€)</span>
+              <span className="text-gray-600 dark:text-slate-400 text-xs">Sparrate (€/Monat)</span>
               <input
                 type="number"
                 min="0"
