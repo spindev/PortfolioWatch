@@ -48,6 +48,4 @@ jobs:
           branch: gh-pages
           folder: dist
           clean: true
-          # Keep PR preview directories when deploying the main site.
-          clean-exclude: pr-preview/
 
