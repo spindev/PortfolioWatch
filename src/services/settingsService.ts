@@ -1,7 +1,7 @@
 import { Settings } from '../types';
 
 const STORAGE_KEY = 'portfoliowatch_settings';
-const DEFAULT_SETTINGS: Settings = { theme: 'dark', monthlySavings: 150, forecastYears: 10 };
+const DEFAULT_SETTINGS: Settings = { theme: 'dark', monthlySavings: 150, forecastYears: 30 };
 
 export function getSettings(): Settings {
   try {

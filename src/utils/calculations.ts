@@ -1,4 +1,4 @@
-import { Holding, PurchaseLot, SaleSimulationResult, SimulatedSaleLot } from '../types';
+import { ForecastPoint, Holding, PurchaseLot, SaleSimulationResult, SimulatedSaleLot } from '../types';
 
 export function calculateTotalValue(holdings: Holding[]): number {
   return holdings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0);
@@ -169,4 +169,69 @@ export function sharesForTargetGain(
 
   // Target not fully achievable — return all available shares
   return totalShares;
+}
+
+/**
+ * Build yearly forecast data points from today forward for `years` years.
+ *
+ * Three annual return rate scenarios (after inflation, net of fees):
+ *   - Pessimistic:  3 % p.a.
+ *   - Realistic:    7 % p.a.
+ *   - Optimistic:  10 % p.a.
+ *
+ * Monthly compounding is used.  Each month `monthlySavings` is added at the
+ * start of the month before growth is applied.
+ *
+ * @param currentValue   Current total portfolio value in €
+ * @param monthlySavings Monthly savings contribution in €
+ * @param years          Number of years to project
+ * @returns              Array of ForecastPoints, one per year (starting from
+ *                       year 1; year 0 = today is prepended as the start value)
+ */
+export function buildForecast(
+  currentValue: number,
+  monthlySavings: number,
+  years: number,
+): ForecastPoint[] {
+  const PESSIMISTIC_ANNUAL = 0.03;
+  const REALISTIC_ANNUAL = 0.07;
+  const OPTIMISTIC_ANNUAL = 0.10;
+
+  const monthlyRate = (annual: number) => (1 + annual) ** (1 / 12) - 1;
+  const rPess = monthlyRate(PESSIMISTIC_ANNUAL);
+  const rReal = monthlyRate(REALISTIC_ANNUAL);
+  const rOpt  = monthlyRate(OPTIMISTIC_ANNUAL);
+
+  const startYear = new Date().getFullYear();
+  const points: ForecastPoint[] = [];
+
+  // Year 0 = today (current value, no projection applied)
+  points.push({
+    date: String(startYear),
+    pessimistic: currentValue,
+    realistic: currentValue,
+    optimistic: currentValue,
+  });
+
+  // Carry forward the running value for each scenario (O(n) instead of O(n²))
+  let vPess = currentValue;
+  let vReal = currentValue;
+  let vOpt  = currentValue;
+
+  for (let y = 1; y <= years; y++) {
+    // Advance 12 months from the previous year's end value
+    for (let m = 0; m < 12; m++) {
+      vPess = (vPess + monthlySavings) * (1 + rPess);
+      vReal = (vReal + monthlySavings) * (1 + rReal);
+      vOpt  = (vOpt  + monthlySavings) * (1 + rOpt);
+    }
+    points.push({
+      date: String(startYear + y),
+      pessimistic: vPess,
+      realistic:   vReal,
+      optimistic:  vOpt,
+    });
+  }
+
+  return points;
 }

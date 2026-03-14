@@ -51,6 +51,14 @@ export interface PortfolioSnapshot {
   totalCost: number;
 }
 
+/** One data point in a portfolio forecast projection */
+export interface ForecastPoint {
+  date: string;
+  pessimistic: number;
+  realistic: number;
+  optimistic: number;
+}
+
 export type Theme = 'dark' | 'light';
 
 /** Active tab in the HoldingDetail inline panel */

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { StatCard } from './components/StatCard';
 import { PortfolioChart } from './components/PortfolioChart';
+import { ForecastChart } from './components/ForecastChart';
 import { HoldingsTable } from './components/HoldingsTable';
 import { SettingsPage } from './components/SettingsPage';
 import { MarketDataPage } from './components/MarketDataPage';
@@ -29,6 +30,7 @@ import {
   formatCurrency,
   formatPercent,
   todayIsoString,
+  buildForecast,
 } from './utils/calculations';
 import { Holding, PortfolioSnapshot, PurchaseLot, SaleLot, Settings } from './types';
 
@@ -264,6 +266,8 @@ function App() {
   const todayStr = todayIsoString();
   const isNonTradingDay = !!lastTradingDate && lastTradingDate < todayStr;
 
+  const forecastData = buildForecast(totalValue, settings.monthlySavings, settings.forecastYears);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
       <Header
@@ -365,6 +369,15 @@ function App() {
                   </div>
                 </div>
                 <PortfolioChart data={portfolioHistory} timeRange={timeRange} />
+              </div>
+
+              {/* Forecast Chart */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-slate-700">
+                <ForecastChart
+                  data={forecastData}
+                  monthlySavings={settings.monthlySavings}
+                  forecastYears={settings.forecastYears}
+                />
               </div>
 
               {/* Holdings Table */}
