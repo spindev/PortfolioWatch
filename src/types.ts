@@ -58,6 +58,8 @@ export type DetailTab = 'chart' | 'lots';
 
 export interface Settings {
   theme: Theme;
+  monthlySavings: number;
+  forecastYears: number;
 }
 
 /** One lot consumed (fully or partially) in a simulated FIFO sale */
