@@ -90,12 +90,12 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange 
             }}
         />
         <YAxis
-          tick={{ fill: 'var(--chart-tick)', fontSize: 11, textAnchor: 'start', dx: 4 }}
+          tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(val) => `€${(val / 1000).toFixed(1)}k`}
           domain={['auto', 'auto']}
-          width={0}
+          width={55}
         />
         <Tooltip content={<CustomTooltip />} />
         <Area
