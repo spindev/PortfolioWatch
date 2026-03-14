@@ -54,6 +54,7 @@ export interface PortfolioSnapshot {
 /** One data point in a portfolio forecast projection */
 export interface ForecastPoint {
   date: string;
+  totalInvested: number;
   pessimistic: number;
   realistic: number;
   optimistic: number;

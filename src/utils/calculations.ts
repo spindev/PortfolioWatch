@@ -183,6 +183,7 @@ export function sharesForTargetGain(
  * start of the month before growth is applied.
  *
  * @param currentValue   Current total portfolio value in €
+ * @param totalCost      Current total invested cost basis in €
  * @param monthlySavings Monthly savings contribution in €
  * @param years          Number of years to project
  * @returns              Array of ForecastPoints, one per year (starting from
@@ -190,6 +191,7 @@ export function sharesForTargetGain(
  */
 export function buildForecast(
   currentValue: number,
+  totalCost: number,
   monthlySavings: number,
   years: number,
 ): ForecastPoint[] {
@@ -208,6 +210,7 @@ export function buildForecast(
   // Year 0 = today (current value, no projection applied)
   points.push({
     date: String(startYear),
+    totalInvested: totalCost,
     pessimistic: currentValue,
     realistic: currentValue,
     optimistic: currentValue,
@@ -227,6 +230,7 @@ export function buildForecast(
     }
     points.push({
       date: String(startYear + y),
+      totalInvested: totalCost + monthlySavings * 12 * y,
       pessimistic: vPess,
       realistic:   vReal,
       optimistic:  vOpt,
