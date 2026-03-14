@@ -71,7 +71,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, monthlySavin
                 axisLine={false}
               />
               <YAxis
-                tick={{ fill: 'var(--chart-tick)', fontSize: 11 }}
+                tick={{ fill: 'var(--chart-tick)', fontSize: 11, textAnchor: 'start', dx: 4 }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(val) => {
@@ -79,7 +79,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, monthlySavin
                   return `€${(val / 1000).toFixed(0)}k`;
                 }}
                 domain={['auto', 'auto']}
-                width={60}
+                width={0}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend
