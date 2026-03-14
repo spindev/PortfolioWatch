@@ -324,25 +324,21 @@ function App() {
                 <StatCard
                   title="Portfoliowert"
                   value={formatCurrency(totalValue, CURRENCY, LOCALE)}
-                  subtitle={`${holdings.length} ETFs`}
                   positive={null}
                 />
                 <StatCard
                   title="Gesamtkosten"
                   value={formatCurrency(totalCost, CURRENCY, LOCALE)}
-                  subtitle="Investiertes Kapital"
                   positive={null}
                 />
                 <StatCard
                   title="Gesamtgewinn"
                   value={formatCurrency(totalGain, CURRENCY, LOCALE)}
-                  subtitle="Absoluter Gewinn"
                   positive={isPositive}
                 />
                 <StatCard
                   title="Gesamtrendite"
                   value={formatPercent(totalGainPercent)}
-                  subtitle="Prozentuale Rendite"
                   positive={isPositive}
                 />
               </div>
