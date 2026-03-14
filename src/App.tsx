@@ -39,12 +39,14 @@ const LOCALE = 'de-DE';
 
 type TimeRange = '1M' | '3M' | '6M' | '1Y' | 'ALL';
 type Page = 'portfolio' | 'settings';
+type ChartView = 'entwicklung' | 'prognose';
 
 const TIME_RANGES: TimeRange[] = ['1M', '3M', '6M', '1Y', 'ALL'];
 
 function App() {
   const [page, setPage] = useState<Page>('portfolio');
   const [timeRange, setTimeRange] = useState<TimeRange>('1Y');
+  const [chartView, setChartView] = useState<ChartView>('entwicklung');
 
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [portfolioHistory, setPortfolioHistory] = useState<PortfolioSnapshot[]>([]);
@@ -266,7 +268,7 @@ function App() {
   const todayStr = todayIsoString();
   const isNonTradingDay = !!lastTradingDate && lastTradingDate < todayStr;
 
-  const forecastData = buildForecast(totalValue, settings.monthlySavings, settings.forecastYears);
+  const forecastData = buildForecast(totalValue, totalCost, settings.monthlySavings, settings.forecastYears);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
@@ -345,39 +347,63 @@ function App() {
                 />
               </div>
 
-              {/* Portfolio Development Chart */}
+              {/* Portfolio Development / Forecast Chart (tabbed) */}
               <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-slate-700">
                 <div className="flex items-center justify-between mb-4 sm:mb-5">
-                  <div>
-                    <h2 className="text-gray-900 dark:text-white font-semibold text-base sm:text-lg">Portfolio-Entwicklung</h2>
-                    <p className="text-gray-500 dark:text-slate-400 text-xs mt-0.5">Wert vs. Kostenbasis über die Zeit</p>
+                  {/* View toggle tabs */}
+                  <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-slate-600 text-xs">
+                    <button
+                      onClick={() => setChartView('entwicklung')}
+                      className={`px-3 py-1.5 transition-colors ${
+                        chartView === 'entwicklung'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      Portfolio-Entwicklung
+                    </button>
+                    <button
+                      onClick={() => setChartView('prognose')}
+                      className={`px-3 py-1.5 transition-colors border-l border-gray-200 dark:border-slate-600 ${
+                        chartView === 'prognose'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      Prognose
+                    </button>
                   </div>
-                  <div className="flex gap-1">
-                    {TIME_RANGES.map((range) => (
-                      <button
-                        key={range}
-                        onClick={() => setTimeRange(range)}
-                        className={`px-2 sm:px-3 py-1 text-xs rounded-md transition-colors ${
-                          timeRange === range
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
-                        }`}
-                      >
-                        {range}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <PortfolioChart data={portfolioHistory} timeRange={timeRange} />
-              </div>
 
-              {/* Forecast Chart */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-slate-700">
-                <ForecastChart
-                  data={forecastData}
-                  monthlySavings={settings.monthlySavings}
-                  forecastYears={settings.forecastYears}
-                />
+                  {/* Right controls — time-range buttons for Entwicklung, nothing for Prognose */}
+                  {chartView === 'entwicklung' && (
+                    <div className="flex gap-1">
+                      {TIME_RANGES.map((range) => (
+                        <button
+                          key={range}
+                          onClick={() => setTimeRange(range)}
+                          className={`px-2 sm:px-3 py-1 text-xs rounded-md transition-colors ${
+                            timeRange === range
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          {range}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {chartView === 'entwicklung' ? (
+                  <PortfolioChart data={portfolioHistory} timeRange={timeRange} />
+                ) : (
+                  <ForecastChart
+                    data={forecastData}
+                    monthlySavings={settings.monthlySavings}
+                    forecastYears={settings.forecastYears}
+                    totalCost={totalCost}
+                  />
+                )}
               </div>
 
               {/* Holdings Table */}
