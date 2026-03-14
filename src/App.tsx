@@ -349,50 +349,48 @@ function App() {
 
               {/* Portfolio Development / Forecast Chart (tabbed) */}
               <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-slate-700">
-                <div className="flex items-center justify-between mb-4 sm:mb-5">
-                  {/* View toggle tabs */}
-                  <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-slate-600 text-xs">
-                    <button
-                      onClick={() => setChartView('entwicklung')}
-                      className={`px-3 py-1.5 transition-colors ${
-                        chartView === 'entwicklung'
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      Portfolio-Entwicklung
-                    </button>
-                    <button
-                      onClick={() => setChartView('prognose')}
-                      className={`px-3 py-1.5 transition-colors border-l border-gray-200 dark:border-slate-600 ${
-                        chartView === 'prognose'
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      Prognose
-                    </button>
-                  </div>
-
-                  {/* Right controls — time-range buttons for Entwicklung, nothing for Prognose */}
-                  {chartView === 'entwicklung' && (
-                    <div className="flex gap-1">
-                      {TIME_RANGES.map((range) => (
-                        <button
-                          key={range}
-                          onClick={() => setTimeRange(range)}
-                          className={`px-2 sm:px-3 py-1 text-xs rounded-md transition-colors ${
-                            timeRange === range
-                              ? 'bg-blue-600 text-white'
-                              : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
-                          }`}
-                        >
-                          {range}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                {/* View toggle tabs */}
+                <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-slate-600 text-xs w-fit mb-3">
+                  <button
+                    onClick={() => setChartView('entwicklung')}
+                    className={`px-3 py-1.5 transition-colors ${
+                      chartView === 'entwicklung'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Portfolio-Entwicklung
+                  </button>
+                  <button
+                    onClick={() => setChartView('prognose')}
+                    className={`px-3 py-1.5 transition-colors border-l border-gray-200 dark:border-slate-600 ${
+                      chartView === 'prognose'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Prognose
+                  </button>
                 </div>
+
+                {/* Time-range buttons — shown below toggle only for Entwicklung */}
+                {chartView === 'entwicklung' && (
+                  <div className="flex gap-1 mb-4 sm:mb-5">
+                    {TIME_RANGES.map((range) => (
+                      <button
+                        key={range}
+                        onClick={() => setTimeRange(range)}
+                        className={`px-2 sm:px-3 py-1 text-xs rounded-md transition-colors ${
+                          timeRange === range
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {range}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {chartView === 'entwicklung' ? (
                   <PortfolioChart data={portfolioHistory} timeRange={timeRange} />
