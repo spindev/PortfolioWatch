@@ -63,7 +63,7 @@ export const PortfolioChart: React.FC<PortfolioChartProps> = ({ data, timeRange 
   return (
     <div className="h-[220px] sm:h-[320px]">
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={filtered} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+      <AreaChart data={filtered} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />

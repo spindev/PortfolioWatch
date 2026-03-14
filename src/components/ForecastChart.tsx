@@ -62,7 +62,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, monthlySavin
         {/* Chart */}
         <div className="flex-1 min-w-0 h-[220px] sm:h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+            <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
               <XAxis
                 dataKey="date"
