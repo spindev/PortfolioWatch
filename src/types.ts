@@ -1,12 +1,3 @@
-export interface ETF {
-  id: string;
-  ticker: string;
-  name: string;
-  currentPrice: number;
-  currency: string;
-  sector: string;
-}
-
 export interface PurchaseLot {
   date: string;
   shares: number;

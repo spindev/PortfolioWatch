@@ -44,7 +44,7 @@ export interface QuoteResult {
   currency: string;
 }
 
-export interface QuotesData {
+interface QuotesData {
   quotes: QuoteResult[];
   /** ISO timestamp of when the static data file was generated; null in development */
   updatedAt: string | null;
